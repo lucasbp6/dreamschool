@@ -13,7 +13,7 @@ Requisitos: Node.js 20+.
 
 ```bash
 npm install
-# crie um .env com DATABASE_URL="file:./dev.db" (e, opcionalmente, FEATHERLESS_API_KEY, FEATHERLESS_MODEL, FEATHERLESS_MENTOR_MODEL, FEATHERLESS_MENTOR_FALLBACK_MODEL e DEMO_TODAY)
+# copie .env.example para .env (o banco prisma/dev.db já vem com o seed de apresentação para DEMO_TODAY=2026-11-03)
 npm run db:setup              # cria o banco SQLite e carrega os dados de demonstração
 npm run dev                   # http://localhost:3000
 ```
