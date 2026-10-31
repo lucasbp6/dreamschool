@@ -1,0 +1,108 @@
+// Dreams School — modelo de dados do MVP (SQLite).
+// SQLite não suporta enums no Prisma: os campos "enum" são String e os valores válidos ficam em src/lib/game.ts.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model School {
+  id         String      @id @default(cuid())
+  name       String
+  classrooms Classroom[]
+  users      User[]
+}
+
+model Classroom {
+  id                String            @id @default(cuid())
+  name              String
+  buildingType      String            @default("TREEHOUSE") // TREEHOUSE | CASTLE | SPACE_BASE | ECO_VILLAGE
+  bricks            Int               @default(0)
+  maintenanceNeeded Int               @default(0)
+  streak            Int               @default(0)
+  lastStreakDay     String? // YYYY-MM-DD do último dia contado no streak
+  schoolId          String
+  school            School            @relation(fields: [schoolId], references: [id])
+  teacherId         String?           @unique
+  teacher           User?             @relation("ClassTeacher", fields: [teacherId], references: [id])
+  students          User[]            @relation("ClassStudents")
+  events            Event[]
+  feedbacks         LessonFeedback[]
+  summaries         FeedbackSummary[]
+}
+
+model User {
+  id              String           @id @default(cuid())
+  name            String
+  role            String // STUDENT | TEACHER | PARENT | MANAGER
+  schoolId        String
+  school          School           @relation(fields: [schoolId], references: [id])
+  classroomId     String?
+  classroom       Classroom?       @relation("ClassStudents", fields: [classroomId], references: [id])
+  teaching        Classroom?       @relation("ClassTeacher")
+  parentId        String?
+  parent          User?            @relation("ParentChildren", fields: [parentId], references: [id])
+  children        User[]           @relation("ParentChildren")
+  pet             Pet?
+  events          Event[]
+  parentNotes     ParentNote[]
+  lessonFeedbacks LessonFeedback[]
+}
+
+model Pet {
+  id              String  @id @default(cuid())
+  petType         String // DRAGON | CAT | DOG | OWL | BUNNY | FOX
+  petName         String
+  xp              Int     @default(0)
+  mood            String  @default("NEUTRAL") // HAPPY | NEUTRAL | TIRED
+  recoveryMission String?
+  studentId       String  @unique
+  student         User    @relation(fields: [studentId], references: [id], onDelete: Cascade)
+}
+
+model Event {
+  id          String    @id @default(cuid())
+  type        String // POSITIVE | ATTENTION | RECOVERY
+  category    String
+  note        String?
+  xpDelta     Int       @default(0)
+  bricksDelta Int       @default(0)
+  createdAt   DateTime  @default(now())
+  studentId   String
+  student     User      @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  classroomId String
+  classroom   Classroom @relation(fields: [classroomId], references: [id], onDelete: Cascade)
+}
+
+model ParentNote {
+  id            String   @id @default(cuid())
+  rawText       String
+  humanizedText String
+  createdAt     DateTime @default(now())
+  studentId     String
+  student       User     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+}
+
+model LessonFeedback {
+  id          String    @id @default(cuid())
+  stars       Int // 1 a 3
+  comment     String?
+  createdAt   DateTime  @default(now())
+  studentId   String
+  student     User      @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  classroomId String
+  classroom   Classroom @relation(fields: [classroomId], references: [id], onDelete: Cascade)
+}
+
+model FeedbackSummary {
+  id            String    @id @default(cuid())
+  text          String
+  feedbackCount Int
+  createdAt     DateTime  @default(now())
+  classroomId   String
+  classroom     Classroom @relation(fields: [classroomId], references: [id], onDelete: Cascade)
+}

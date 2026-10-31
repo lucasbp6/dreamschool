@@ -38,10 +38,9 @@ Plataforma web gamificada para o ensino básico conectando Alunos, Professores, 
 - **Autenticação Simplificada (Demo Mode):** Seletor global no topo (`RoleSwitcher`) que alterna instantaneamente entre Aluno, Professor, Pais e Gestor.
 - **Integração de IA no App:** SDK `openai` apontando para `https://api.featherless.ai/v1` usando `Qwen/Qwen2.5-7B-Instruct`.
 
-## 3. Divisão de Pastas (Isolamento Git)
-- `src/app/student/*` e `src/app/parent/*` -> Exclusivo DEV 2.
-- `src/app/teacher/*`, `src/app/manager/*` e `src/lib/ai.ts` -> Exclusivo DEV 1.
-- `src/components/shared/*` e `prisma/schema.prisma` -> Alinhado no Setup Inicial (Fase 0).
+## 3. Organização do Projeto
+- Desenvolvimento feito por um único desenvolvedor (com Claude Code); não há divisão de pastas entre devs.
+- **Registro de prompts:** todo prompt de desenvolvimento é salvo em `prompts/NNN-titulo.md` (data, prompt na íntegra, resumo do que foi feito) e indexado em `prompts/README.md`.
 
 ## 4. Padrões de Interface e Acessibilidade
 - Barra de Acessibilidade fixa (Alto Contraste, Tamanho de Fonte, Fonte amigável para dislexia).

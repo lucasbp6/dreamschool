@@ -1,0 +1,101 @@
+@import "tailwindcss";
+
+/* Tokens semânticos — a classe .hc (Alto Contraste) troca só os valores. */
+:root {
+  --bg: #f6f3ff;
+  --surface: #ffffff;
+  --surface-2: #faf8ff;
+  --ink: #1f1b3a;
+  --muted: #625d85;
+  --line: #e4def5;
+  --brand: #6a46f0;
+  --brand-soft: #eee8ff;
+  --on-brand: #ffffff;
+  --attention: #a14f00; /* âmbar/laranja: Ponto de Atenção (nunca vermelho) */
+  --attention-soft: #fff3df;
+  --success: #12733a;
+  --success-soft: #e5f7ec;
+  --sky: #0b6fa4;
+  --sky-soft: #e3f3fc;
+  color-scheme: light;
+}
+
+html.hc {
+  --bg: #000000;
+  --surface: #000000;
+  --surface-2: #111111;
+  --ink: #ffffff;
+  --muted: #f0f0f0;
+  --line: #ffffff;
+  --brand: #ffe14d;
+  --brand-soft: #222200;
+  --on-brand: #000000;
+  --attention: #ffb35c;
+  --attention-soft: #241500;
+  --success: #7dffa6;
+  --success-soft: #002a10;
+  --sky: #7fd8ff;
+  --sky-soft: #00202e;
+  color-scheme: dark;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-brand: var(--brand);
+  --color-brand-soft: var(--brand-soft);
+  --color-on-brand: var(--on-brand);
+  --color-attention: var(--attention);
+  --color-attention-soft: var(--attention-soft);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-sky: var(--sky);
+  --color-sky-soft: var(--sky-soft);
+  --font-sans: var(--font-nunito), ui-rounded, system-ui, sans-serif;
+  --font-readable: var(--font-atkinson), system-ui, sans-serif;
+}
+
+/* Tamanho de fonte (tudo em rem escala junto). */
+html.fs-1 { font-size: 112.5%; }
+html.fs-2 { font-size: 125%; }
+
+/* Fonte amigável para dislexia. */
+html.dyslexic body {
+  font-family: var(--font-readable);
+  letter-spacing: 0.035em;
+  word-spacing: 0.12em;
+  line-height: 1.7;
+}
+
+html.hc .card { border-width: 2px; }
+html.hc a, html.hc button { text-decoration-thickness: 2px; }
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-sans);
+}
+
+:focus-visible {
+  outline: 3px solid var(--brand);
+  outline-offset: 2px;
+}
+
+@keyframes pet-bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8%); }
+}
+@keyframes pet-sway {
+  0%, 100% { transform: rotate(-3deg); }
+  50% { transform: rotate(3deg); }
+}
+.pet-happy { animation: pet-bounce 1.8s ease-in-out infinite; }
+.pet-tired { animation: pet-sway 4s ease-in-out infinite; filter: saturate(0.6); }
+
+@media (prefers-reduced-motion: reduce) {
+  .pet-happy, .pet-tired { animation: none; }
+}
