@@ -9,25 +9,62 @@ As regras completas estão em [`AGENTS.md`](AGENTS.md). Os prompts usados no des
 
 ## Como rodar
 
-Requisitos: Node.js 20+.
+### Requisitos
+
+- **Node.js 20+** e npm.
+- (Opcional, recomendado) uma chave da **Featherless** para usar a IA de verdade — veja o passo 3.
+
+### Passo a passo
 
 ```bash
+# 1. Instale as dependências
 npm install
-# copie .env.example para .env (o banco prisma/dev.db já vem com o seed de apresentação para DEMO_TODAY=2026-11-03)
-npm run db:setup              # cria o banco SQLite e carrega os dados de demonstração
+
+# 2. Crie o arquivo de ambiente
+cp .env.example .env          # no Windows (PowerShell): Copy-Item .env.example .env
+
+# 3. Edite o .env: coloque sua chave da Featherless e confira DEMO_TODAY (veja abaixo)
+
+# 4. Crie o banco SQLite e carregue os dados de demonstração
+npm run db:setup              # aplica as migrações e roda o seed
+
+# 5. Suba o servidor
 npm run dev                   # http://localhost:3000
 ```
 
+### Configurando o `.env`
+
+| Variável | Obrigatória | Para quê |
+| --- | --- | --- |
+| `DATABASE_URL` | Sim | Caminho do SQLite, relativo à pasta `prisma/`. Use `file:./dev.db`. |
+| `FEATHERLESS_API_KEY` | **Necessária para a IA real** | Chave da API da Featherless. |
+| `DEMO_TODAY` | Recomendada | Fixa o "hoje" da aplicação. Use `2026-11-03` (terça, dia letivo), a data para a qual o seed foi pensado. |
+| `FEATHERLESS_MODEL`, `FEATHERLESS_MENTOR_MODEL`, `FEATHERLESS_MENTOR_FALLBACK_MODEL` | Não | Trocam os modelos de IA (já têm padrão). |
+
+> [!IMPORTANT]
+> **Para usar a IA correta (humanizador de recados, resumo das avaliações e "Ensinar o pet"), você precisa colocar a sua chave da Featherless no `.env`:**
+>
+> 1. Crie uma conta e gere uma chave em [featherless.ai](https://featherless.ai).
+> 2. Abra o `.env` e preencha: `FEATHERLESS_API_KEY="sua-chave-aqui"`.
+> 3. **Reinicie o servidor** (`npm run dev`) — o `.env` só é lido na inicialização.
+>
+> Sem a chave, o app continua funcionando offline, mas usa **textos de fallback** em vez da IA (o humanizador e o resumo viram texto modelo, e o pet da mentoria não conversa de verdade). Nunca faça commit do `.env` (ele já está no `.gitignore`).
+
+### Banco de dados de demonstração
+
+- `npm run db:setup`: aplica as migrações e carrega o seed (use na primeira vez).
+- `npm run db:reset`: recarrega o seed e volta aos dados iniciais (**apaga tudo** o que foi criado no banco).
+
+O seed é de **apresentação** e as datas são relativas ao "hoje" da aplicação: rode-o com o mesmo `DEMO_TODAY` que vai usar na apresentação (ex.: `DEMO_TODAY="2026-11-03"` e depois `npm run db:reset`). Ele cria 4 turmas, 4 professores, 17 alunos, 4 responsáveis e a gestora, com duas semanas de histórico (conquistas, pontos de atenção, chamadas, notas, avaliações das aulas), aulas com o pet, recados e conversas.
+
+> [!NOTE]
+> Se `DEMO_TODAY` não estiver definido, o "hoje" é a data real; se cair num fim de semana ou feriado, não há aula e a ofensiva de avaliações não aparece. Sempre escolha um dia letivo (02/11 é feriado de Finados) e reinicie o servidor depois de mudar.
+
+### Outros
+
 Para testar um build de produção sem disputar a pasta `.next` com o `npm run dev`: `NEXT_DIST_DIR=.next-test npm run build` e `NEXT_DIST_DIR=.next-test npx next start -p 3100`.
 
-Para voltar aos dados iniciais da demo: `npm run db:reset` (**apaga tudo** o que foi criado no banco e recarrega o seed).
-
-O seed é de **apresentação** e as datas são relativas ao "hoje" da aplicação: rode-o com o mesmo `DEMO_TODAY` que vai usar na apresentação (ex.: deixe `DEMO_TODAY="2026-11-03"` no `.env` e rode `npm run db:reset`). Ele cria 4 turmas, 4 professores, 17 alunos, 4 responsáveis e a gestora, com duas semanas de histórico (conquistas, pontos de atenção, chamadas, notas, avaliações das aulas), aulas com o pet, recados e conversas.
-
-Sem `FEATHERLESS_API_KEY`, o humanizador de recados e o resumo das avaliações usam um texto modelo, então a demo funciona offline.
-
-A ofensiva de avaliações depende das aulas do dia. Para apresentar num fim de semana, defina um dia letivo no `.env`, por exemplo `DEMO_TODAY="2026-11-03"` (uma terça-feira; 02/11 é feriado de Finados no calendário), e reinicie o servidor.
-
+Para conferir tudo: `npm test` (regras) e `npm run lint`.
 ## Roteiro de demonstração
 
 ### Estados prontos no seed
