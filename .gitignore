@@ -50,5 +50,6 @@ Thumbs.db
 .idea/
 
 # Deploy (Vercel)
-.vercel!.env.example
+.vercel
+!.env.example
 prisma/dev.backup.db
