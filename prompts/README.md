@@ -19,3 +19,4 @@ Cada prompt enviado durante o desenvolvimento fica em um arquivo numerado, com o
 | 013 | [013-scroll-e-voz-do-pet.md](013-scroll-e-voz-do-pet.md) | Rolagem na chamada e nos recados; voz do pet |
 | 014 | [014-caderno-do-pet.md](014-caderno-do-pet.md) | Sem voz do pet; caderno de estudos do aluno com o pet |
 | 015 | [015-ranking-das-turmas.md](015-ranking-das-turmas.md) | Ranking entre as turmas |
+| 016 | [016-seed-de-apresentacao.md](016-seed-de-apresentacao.md) | Seed pronto para apresentação |

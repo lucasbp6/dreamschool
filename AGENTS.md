@@ -54,6 +54,7 @@ Plataforma web gamificada para o ensino básico conectando Alunos, Professores, 
 - **Dia letivo** = dentro do período, não é feriado/recesso e cai num dia da semana com aula na grade da turma (regras em `src/lib/calendar.ts`).
 - O **gestor** edita em Gestor → Calendário letivo (período, marcar um dia ou um intervalo, remover). Aluno, pais e professor têm a aba **Calendário**; para aluno e pais, os dias da ofensiva aparecem com uma chama.
 - O ano de 2026 (feriados nacionais, Carnaval, recesso de julho, Dia do Professor) fica em `prisma/calendar-2026.ts`, usado pelo seed.
+- O seed (`prisma/seed.ts`) é o roteiro da apresentação: datas relativas ao "hoje" da aplicação (respeita `DEMO_TODAY`), só em dias letivos. Ao criar uma feature nova, acrescente dados que a mostrem no seed e na tabela "Estados prontos no seed" do README.
 
 ### G. Ensinar o Pet (Aluno Mentor com IA)
 - Na aba **Ensinar o pet**, o aluno escolhe a matéria e um tema da aula e explica com as próprias palavras. A aula abre na hora com uma fala do pet gerada pela IA: uma pergunta específica sobre o tema e um convite para o aluno contar o que já sabe ou o que acha difícil. O pet é um **aprendiz curioso**: responde em até 3 frases simples, comemora acertos com uma pergunta que aprofunda o tema e, quando há um erro, mostra a dúvida com gentileza, diz a informação correta e pede para o aluno conferir. Nunca inventa fatos e volta ao tema se a conversa fugir dele.

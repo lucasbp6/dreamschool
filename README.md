@@ -20,7 +20,9 @@ npm run dev                   # http://localhost:3000
 
 Para testar um build de produção sem disputar a pasta `.next` com o `npm run dev`: `NEXT_DIST_DIR=.next-test npm run build` e `NEXT_DIST_DIR=.next-test npx next start -p 3100`.
 
-Para voltar aos dados iniciais da demo: `npm run db:reset`.
+Para voltar aos dados iniciais da demo: `npm run db:reset` (**apaga tudo** o que foi criado no banco e recarrega o seed).
+
+O seed é de **apresentação** e as datas são relativas ao "hoje" da aplicação: rode-o com o mesmo `DEMO_TODAY` que vai usar na apresentação (ex.: deixe `DEMO_TODAY="2026-11-03"` no `.env` e rode `npm run db:reset`). Ele cria 4 turmas, 4 professores, 17 alunos, 4 responsáveis e a gestora, com duas semanas de histórico (conquistas, pontos de atenção, chamadas, notas, avaliações das aulas), aulas com o pet, recados e conversas.
 
 Sem `FEATHERLESS_API_KEY`, o humanizador de recados e o resumo das avaliações usam um texto modelo, então a demo funciona offline.
 
@@ -28,7 +30,25 @@ A ofensiva de avaliações depende das aulas do dia. Para apresentar num fim de 
 
 ## Roteiro de demonstração
 
-1. Em **Professor**, escolha "Prof.ª Marina" (4º Ano A) no seletor do topo. Dê uma ação positiva a um aluno e veja o XP e os tijolinhos subirem.
+### Estados prontos no seed
+
+| Quem | O que mostrar |
+| --- | --- |
+| **Lia Fernandes Costa** (aluna, 4º Ano A) | Pet Guardião (Sábia), ofensiva longa e só **metade das aulas de hoje avaliadas** — avalie o resto ao vivo e veja a ofensiva subir. **Caderno de estudos** com 3 páginas (Fotossíntese e Frações com correções do pet, Ciclo da água) e anotações dela. |
+| **João Pedro Almeida** (aluno, 4º Ano A) | Pet **precisando de cuidado** com Missão de Cuidado ativa, faltas na chamada, notas mais baixas, página do caderno "Tabuada do 7" (o pet corrigiu 7 × 8). |
+| **Sofia Ribeiro Lima** (aluna, 5º Ano B) | **Aula com o pet em andamento** ("Sistema solar"): ao abrir *Ensinar o pet* aparece o histórico da conversa, com o pet tirando a dúvida "o Sol gira em volta da Terra". |
+| **Beatriz, Miguel, Valentina** | Ofensivas curtas (3, 2 e 5 dias); Miguel tem a página "Classificação dos animais". |
+| **Pedro Henrique Souza** | Histórico com ponto de atenção **superado** (Missão de Cuidado concluída). |
+| **Prof.ª Marina Lopes** | 4º Ano A com **Reparo da Turma** pendente; resumo com IA das avaliações já gerado; mensagem **não lida** da Cláudia. |
+| **Prof. Carlos Mendes** | Conversa nova da Patrícia (mãe da Sofia) esperando resposta. |
+| **Cláudia Almeida** (mãe do João) | Recados humanizados e conversa com a Prof.ª Marina. |
+| **Roberto Fernandes** (pai da Lia) | Resposta **não lida** da gestora sobre a reunião de pais. |
+| **Marcos Oliveira** | Dois filhos em turmas diferentes (Miguel e Ana Clara): seletor de filhos. |
+| **Ana Paula Moreira** (gestora) | Ranking: 5º Ano B (Base Espacial no nível máximo) lidera o geral e o 3º Ano C lidera a semana. |
+
+### Passo a passo
+
+1. Em **Professor**, escolha "Prof.ª Marina Lopes" (4º Ano A) no seletor do topo. Dê uma ação positiva a um aluno e veja o XP e os tijolinhos subirem.
 2. Registre um **Ponto de Atenção**: o pet fica "precisando de cuidado", ganha uma missão, e o castelo pede um reparo (a sequência pausa).
 3. Dê uma nova ação positiva ao mesmo aluno: missão concluída, bônus de superação e o reparo é pago antes dos tijolinhos.
 4. Escreva uma nota rápida em **Recado para a família** e clique em **Humanizar com IA**.
