@@ -1,0 +1,181 @@
+@import "tailwindcss";
+
+/* Tokens semânticos — a classe .hc (Alto Contraste) troca só os valores. */
+:root {
+  /* Paleta pastel no estilo das ilustrações: creme, lavanda e tons dessaturados. */
+  --bg: #f8f4e9;
+  --surface: #fffdf8;
+  --surface-2: #f3eee2;
+  --ink: #3b2f50;
+  --muted: #6c6280;
+  --line: #e6ddcc;
+  --brand: #7458a8;
+  --brand-soft: #ece5f5;
+  --on-brand: #ffffff;
+  --attention: #95561c; /* âmbar/laranja: Ponto de Atenção (nunca vermelho) */
+  --attention-soft: #f6e6d1;
+  --success: #3b7559;
+  --success-soft: #e1eee5;
+  --sky: #3d6a83;
+  --sky-soft: #e0ebf1;
+  /* Tons suaves das matérias na grade horária. */
+  --tint-1: #ebe3f5;
+  --tint-2: #e0ebf1;
+  --tint-3: #e1eee5;
+  --tint-4: #f5e7d6;
+  --tint-5: #f3e1ea;
+  --tint-6: #ebe8ee;
+  /* Cenário: céu creme-lavanda e nuvens. */
+  --sky-top: #ece4f6;
+  --sky-bottom: #f8f4e9;
+  --cloud: #e3daf2;
+  --cloud-deep: #cfc2e8;
+  --cloud-blue: #d8e6f0;
+  --sparkle: #d9b864;
+  color-scheme: light;
+}
+
+html.hc {
+  --bg: #000000;
+  --surface: #000000;
+  --surface-2: #111111;
+  --ink: #ffffff;
+  --muted: #f0f0f0;
+  --line: #ffffff;
+  --brand: #ffe14d;
+  --brand-soft: #222200;
+  --on-brand: #000000;
+  --attention: #ffb35c;
+  --attention-soft: #241500;
+  --success: #7dffa6;
+  --success-soft: #002a10;
+  --sky: #7fd8ff;
+  --sky-soft: #00202e;
+  --tint-1: #000000;
+  --tint-2: #000000;
+  --tint-3: #000000;
+  --tint-4: #000000;
+  --tint-5: #000000;
+  --tint-6: #000000;
+  --sky-top: #000000;
+  --sky-bottom: #000000;
+  --cloud: #1a1a1a;
+  --cloud-deep: #2a2a2a;
+  --cloud-blue: #1a1a1a;
+  --sparkle: #ffe14d;
+  color-scheme: dark;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-brand: var(--brand);
+  --color-brand-soft: var(--brand-soft);
+  --color-on-brand: var(--on-brand);
+  --color-attention: var(--attention);
+  --color-attention-soft: var(--attention-soft);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-sky: var(--sky);
+  --color-sky-soft: var(--sky-soft);
+  --color-tint-1: var(--tint-1);
+  --color-tint-2: var(--tint-2);
+  --color-tint-3: var(--tint-3);
+  --color-tint-4: var(--tint-4);
+  --color-tint-5: var(--tint-5);
+  --color-tint-6: var(--tint-6);
+  --font-sans: var(--font-nunito), ui-rounded, system-ui, sans-serif;
+  --font-readable: var(--font-atkinson), system-ui, sans-serif;
+}
+
+/* Tamanho de fonte (tudo em rem escala junto). */
+html.fs-1 { font-size: 112.5%; }
+html.fs-2 { font-size: 125%; }
+
+/* Fonte amigável para dislexia. */
+html.dyslexic body {
+  font-family: var(--font-readable);
+  letter-spacing: 0.035em;
+  word-spacing: 0.12em;
+  line-height: 1.7;
+}
+
+html.hc .card { border-width: 2px; }
+html.hc a, html.hc button { text-decoration-thickness: 2px; }
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-sans);
+}
+
+:focus-visible {
+  outline: 3px solid var(--brand);
+  outline-offset: 2px;
+}
+
+@keyframes pet-bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8%); }
+}
+@keyframes pet-sway {
+  0%, 100% { transform: rotate(-3deg); }
+  50% { transform: rotate(3deg); }
+}
+.pet-happy { animation: pet-bounce 1.8s ease-in-out infinite; }
+.pet-tired { animation: pet-sway 4s ease-in-out infinite; filter: saturate(0.6); }
+.pet-idle { animation: pet-bounce 3.5s ease-in-out infinite; }
+
+@keyframes cloud-drift {
+  from { transform: translateX(-10%); }
+  to { transform: translateX(110%); }
+}
+@keyframes twinkle {
+  0%, 100% { opacity: 0.2; transform: scale(0.8); }
+  50% { opacity: 1; transform: scale(1.1); }
+}
+.cloud { animation: cloud-drift 40s linear infinite; }
+.cloud-slow { animation: cloud-drift 65s linear infinite; }
+.twinkle { animation: twinkle 2.4s ease-in-out infinite; }
+
+/* Caderno de estudos com o pet: papel pautado com margem e espiral. */
+.notebook-paper {
+  background-color: var(--surface);
+  background-image: repeating-linear-gradient(to bottom, transparent 0 calc(2rem - 1px), var(--line) calc(2rem - 1px) 2rem);
+  background-position: 0 0.4rem;
+  line-height: 2rem;
+  border-left: 3px solid var(--cloud-deep);
+}
+/* .notebook-font só troca a letra (títulos mantêm o tamanho); .notebook-hand também ajusta o tamanho do texto. */
+.notebook-font, .notebook-hand { font-family: var(--font-patrick), "Comic Sans MS", cursive; }
+.notebook-hand { font-size: 1.15rem; }
+html.dyslexic .notebook-font, html.dyslexic .notebook-hand { font-family: var(--font-readable); }
+html.dyslexic .notebook-hand { font-size: 1rem; }
+.notebook-spiral {
+  background-image: radial-gradient(circle at center, var(--bg) 0 35%, var(--muted) 36% 48%, transparent 49%);
+  background-size: 1.4rem 1.4rem;
+  background-repeat: repeat-y;
+}
+
+/* Barrinhas de som enquanto o ditado está ouvindo. */
+@keyframes eq {
+  0%, 100% { transform: scaleY(0.35); }
+  50% { transform: scaleY(1); }
+}
+.eq-bar { transform-origin: bottom; animation: eq 0.9s ease-in-out infinite; }
+
+.scene-sky { background: linear-gradient(180deg, var(--sky-top), var(--sky-bottom)); }
+.scene-cloud { fill: var(--cloud); }
+.scene-cloud-deep { fill: var(--cloud-deep); }
+.scene-cloud-blue { fill: var(--cloud-blue); }
+.scene-sparkle { fill: var(--sparkle); }
+html.hc .scene-cloud, html.hc .scene-cloud-deep { stroke: var(--line); stroke-width: 2; }
+html.hc .cloud, html.hc .cloud-slow { display: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .pet-happy, .pet-tired, .pet-idle, .cloud, .cloud-slow, .twinkle, .eq-bar { animation: none; }
+}

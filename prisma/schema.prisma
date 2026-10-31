@@ -1,0 +1,272 @@
+// Dreams School — modelo de dados do MVP (SQLite).
+// SQLite não suporta enums no Prisma: os campos "enum" são String e os valores válidos ficam em src/lib/game.ts.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model School {
+  id         String        @id @default(cuid())
+  name       String
+  classrooms Classroom[]
+  users      User[]
+  subjects   Subject[]
+  termStart  String? // YYYY-MM-DD: início do período letivo
+  termEnd    String? // YYYY-MM-DD: fim do período letivo
+  calendar   CalendarDay[]
+}
+
+model Classroom {
+  id                String            @id @default(cuid())
+  name              String
+  buildingType      String            @default("TREEHOUSE") // TREEHOUSE | CASTLE | SPACE_BASE | OBSERVATORY
+  bricks            Int               @default(0)
+  maintenanceNeeded Int               @default(0)
+  streak            Int               @default(0)
+  lastStreakDay     String? // YYYY-MM-DD do último dia contado no streak
+  schoolId          String
+  school            School            @relation(fields: [schoolId], references: [id])
+  classSubjects     ClassSubject[]
+  students          User[]            @relation("ClassStudents")
+  events            Event[]
+  feedbacks         LessonFeedback[]
+  summaries         FeedbackSummary[]
+}
+
+model User {
+  id                    String                @id @default(cuid())
+  name                  String
+  role                  String // STUDENT | TEACHER | PARENT | MANAGER
+  schoolId              String
+  school                School                @relation(fields: [schoolId], references: [id])
+  classroomId           String?
+  classroom             Classroom?            @relation("ClassStudents", fields: [classroomId], references: [id])
+  teaching              ClassSubject[]
+  parentId              String?
+  parent                User?                 @relation("ParentChildren", fields: [parentId], references: [id])
+  children              User[]                @relation("ParentChildren")
+  pet                   Pet?
+  events                Event[]
+  parentNotes           ParentNote[]
+  lessonFeedbacks       LessonFeedback[]      @relation("StudentFeedbacks")
+  feedbacksReceived     LessonFeedback[]      @relation("TeacherFeedbacks")
+  feedbackSummaries     FeedbackSummary[]
+  attendances           Attendance[]
+  grades                Grade[]
+  mentorSessions        MentorSession[]
+  parentConversations   Conversation[]        @relation("ParentConversations")
+  receivedConversations Conversation[]        @relation("ReceivedConversations")
+  aboutConversations    Conversation[]        @relation("StudentConversations")
+  conversationMessages  ConversationMessage[]
+}
+
+model Pet {
+  id              String  @id @default(cuid())
+  petType         String // CAT | OWL | BEAR | BUNNY | FOX | DOG | DRAGON
+  petName         String
+  xp              Int     @default(0)
+  mood            String  @default("NEUTRAL") // HAPPY | NEUTRAL | TIRED
+  recoveryMission String?
+  studentId       String  @unique
+  student         User    @relation(fields: [studentId], references: [id], onDelete: Cascade)
+}
+
+model Event {
+  id          String    @id @default(cuid())
+  type        String // POSITIVE | ATTENTION | RECOVERY
+  category    String
+  note        String?
+  xpDelta     Int       @default(0)
+  bricksDelta Int       @default(0)
+  createdAt   DateTime  @default(now())
+  studentId   String
+  student     User      @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  classroomId String
+  classroom   Classroom @relation(fields: [classroomId], references: [id], onDelete: Cascade)
+}
+
+model ParentNote {
+  id            String   @id @default(cuid())
+  rawText       String
+  humanizedText String
+  createdAt     DateTime @default(now())
+  studentId     String
+  student       User     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+}
+
+// Avaliação de uma aula (matéria numa data) por um aluno. Uma por matéria por data; pode ser feita
+// no dia da aula ou no dia seguinte. O professor fica gravado para o resumo e a lista anônima dele.
+model LessonFeedback {
+  id             String       @id @default(cuid())
+  stars          Int // 1 a 3
+  comment        String?
+  lessonDate     String // YYYY-MM-DD: data da aula avaliada
+  day            String // YYYY-MM-DD: data em que a avaliação foi feita
+  classSubjectId String
+  classSubject   ClassSubject @relation(fields: [classSubjectId], references: [id], onDelete: Cascade)
+  createdAt      DateTime     @default(now())
+  studentId      String
+  student        User         @relation("StudentFeedbacks", fields: [studentId], references: [id], onDelete: Cascade)
+  teacherId      String
+  teacher        User         @relation("TeacherFeedbacks", fields: [teacherId], references: [id], onDelete: Cascade)
+  classroomId    String
+  classroom      Classroom    @relation(fields: [classroomId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, classSubjectId, lessonDate])
+}
+
+model FeedbackSummary {
+  id            String    @id @default(cuid())
+  text          String
+  feedbackCount Int
+  createdAt     DateTime  @default(now())
+  teacherId     String
+  teacher       User      @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  classroomId   String
+  classroom     Classroom @relation(fields: [classroomId], references: [id], onDelete: Cascade)
+}
+
+// Matéria do catálogo da escola (ex.: Matemática).
+model Subject {
+  id            String         @id @default(cuid())
+  name          String
+  schoolId      String
+  school        School         @relation(fields: [schoolId], references: [id])
+  classSubjects ClassSubject[]
+
+  @@unique([schoolId, name])
+}
+
+// Matéria oferecida a uma turma, com o professor responsável. Um professor pode ter várias turmas.
+model ClassSubject {
+  id          String           @id @default(cuid())
+  classroomId String
+  classroom   Classroom        @relation(fields: [classroomId], references: [id], onDelete: Cascade)
+  subjectId   String
+  subject     Subject          @relation(fields: [subjectId], references: [id])
+  teacherId   String
+  teacher     User             @relation(fields: [teacherId], references: [id])
+  slots       ScheduleSlot[]
+  attendances Attendance[]
+  assessments Assessment[]
+  feedbacks   LessonFeedback[]
+
+  @@unique([classroomId, subjectId])
+}
+
+// Aula na grade horária semanal da turma.
+model ScheduleSlot {
+  id             String       @id @default(cuid())
+  weekday        Int // 1 = segunda ... 6 = sábado
+  startTime      String // "HH:MM"
+  endTime        String // "HH:MM"
+  classSubjectId String
+  classSubject   ClassSubject @relation(fields: [classSubjectId], references: [id], onDelete: Cascade)
+}
+
+// Chamada: presença do aluno numa matéria em um dia.
+model Attendance {
+  id             String       @id @default(cuid())
+  date           String // YYYY-MM-DD
+  status         String // PRESENT | ABSENT | LATE
+  classSubjectId String
+  classSubject   ClassSubject @relation(fields: [classSubjectId], references: [id], onDelete: Cascade)
+  studentId      String
+  student        User         @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([classSubjectId, studentId, date])
+}
+
+// Avaliação lançada pelo professor (prova, trabalho...) com nota máxima.
+model Assessment {
+  id             String       @id @default(cuid())
+  title          String
+  date           String // YYYY-MM-DD
+  maxScore       Float        @default(10)
+  classSubjectId String
+  classSubject   ClassSubject @relation(fields: [classSubjectId], references: [id], onDelete: Cascade)
+  grades         Grade[]
+}
+
+model Grade {
+  id           String     @id @default(cuid())
+  score        Float
+  assessmentId String
+  assessment   Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  studentId    String
+  student      User       @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([assessmentId, studentId])
+}
+
+// "Ensinar o pet": o aluno explica um tema da aula e o pet, curioso, tira dúvidas e corrige erros com gentileza.
+model MentorSession {
+  id          String          @id @default(cuid())
+  subjectName String
+  topic       String
+  day         String // YYYY-MM-DD
+  recap       String? // o que o pet aprendeu (gerado ao terminar)
+  notes       String? // página do caderno (JSON: aprendemos, cuidado, revisar), gerada ao terminar
+  studentNote String? // anotação do próprio aluno na página do caderno
+  rewarded    Boolean         @default(false)
+  createdAt   DateTime        @default(now())
+  endedAt     DateTime?
+  studentId   String
+  student     User            @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  messages    MentorMessage[]
+}
+
+model MentorMessage {
+  id        String        @id @default(cuid())
+  role      String // STUDENT | PET
+  content   String
+  usedAi    Boolean       @default(true)
+  viaAudio  Boolean       @default(false) // explicação falada (transcrita pelo navegador)
+  createdAt DateTime      @default(now())
+  sessionId String
+  session   MentorSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+}
+
+// Dia especial do calendário escolar. HOLIDAY e RECESS não têm aula; EVENT é dia letivo com evento.
+model CalendarDay {
+  id       String @id @default(cuid())
+  date     String // YYYY-MM-DD
+  kind     String // HOLIDAY | RECESS | EVENT
+  label    String
+  schoolId String
+  school   School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  @@unique([schoolId, date])
+}
+
+// Conversa iniciada por um responsável com um professor ou com o gestor (opcionalmente sobre um filho).
+model Conversation {
+  id              String                @id @default(cuid())
+  subject         String
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+  parentId        String
+  parent          User                  @relation("ParentConversations", fields: [parentId], references: [id], onDelete: Cascade)
+  recipientId     String
+  recipient       User                  @relation("ReceivedConversations", fields: [recipientId], references: [id], onDelete: Cascade)
+  studentId       String?
+  student         User?                 @relation("StudentConversations", fields: [studentId], references: [id], onDelete: SetNull)
+  parentReadAt    DateTime? // até quando o responsável leu
+  recipientReadAt DateTime? // até quando o professor/gestor leu
+  messages        ConversationMessage[]
+}
+
+model ConversationMessage {
+  id             String       @id @default(cuid())
+  body           String
+  createdAt      DateTime     @default(now())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  authorId       String
+  author         User         @relation(fields: [authorId], references: [id], onDelete: Cascade)
+}
