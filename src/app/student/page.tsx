@@ -1,9 +1,11 @@
-import { CalendarDays, Flame, GraduationCap, History, MessagesSquare, Sparkles, Star, Target } from "lucide-react";
+import { CalendarDays, CalendarRange, Flame, GraduationCap, History, MessagesSquare, Sparkles, Star, Target } from "lucide-react";
 import { db } from "@/lib/db";
 import { getActingUser } from "@/lib/session";
 import { classroomSchedule } from "@/lib/schedule-data";
 import { feedbackDay } from "@/lib/feedback-data";
 import { firstName } from "@/lib/game";
+import { isSchoolDay } from "@/lib/calendar";
+import { SchoolCalendar } from "@/components/shared/SchoolCalendar";
 import { EventList } from "@/components/shared/EventList";
 import { ReportCard } from "@/components/shared/ReportCard";
 import { ScheduleGrid } from "@/components/shared/ScheduleGrid";
@@ -40,6 +42,12 @@ export default async function StudentPage() {
     }),
   ]);
   const activeMentor = mentorSessions.find((s) => !s.endedAt) ?? null;
+  // Dias da ofensiva no calendário: dias letivos em que o aluno avaliou algum professor.
+  const feedbackDays = (
+    await db.lessonFeedback.findMany({ where: { studentId: student.id }, select: { day: true }, distinct: ["day"] })
+  )
+    .map((f) => f.day)
+    .filter((d) => isSchoolDay(d, feedback.calendar, feedback.lessonDays));
   const pending = feedback.required - feedback.ratedRequired;
 
   return (
@@ -107,7 +115,9 @@ export default async function StudentPage() {
                 streak={feedback.streak}
                 required={feedback.required}
                 ratedRequired={feedback.ratedRequired}
-                completedToday={feedback.completedToday}
+                streakCountedToday={feedback.streakCountedToday}
+                bonusToday={feedback.bonusToday}
+                noSchoolReason={feedback.noSchoolReason}
               />
             ),
           },
@@ -159,6 +169,23 @@ export default async function StudentPage() {
               <Card>
                 <CardTitle icon={<CalendarDays size={20} className="text-brand" aria-hidden />}>Minha grade horária</CardTitle>
                 <ScheduleGrid slots={schedule} />
+              </Card>
+            ),
+          },
+          {
+            id: "calendario",
+            label: "Calendário",
+            icon: <CalendarRange size={16} aria-hidden />,
+            content: (
+              <Card>
+                <CardTitle icon={<CalendarRange size={20} className="text-brand" aria-hidden />}>Calendário letivo</CardTitle>
+                <SchoolCalendar
+                  calendar={feedback.calendar}
+                  lessonWeekdays={feedback.lessonDays}
+                  today={feedback.today}
+                  streakDays={feedbackDays}
+                  streakLabel="Dia da ofensiva (avaliou os professores)"
+                 />
               </Card>
             ),
           },

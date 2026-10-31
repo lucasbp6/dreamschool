@@ -1,10 +1,12 @@
 import Link from "next/link";
-import { CalendarDays, GraduationCap, History, Mail, Sparkles } from "lucide-react";
+import { CalendarDays, CalendarRange, GraduationCap, History, Mail, Sparkles } from "lucide-react";
 import { db } from "@/lib/db";
 import { getActingUser } from "@/lib/session";
 import { classroomSchedule } from "@/lib/schedule-data";
 import { feedbackDay } from "@/lib/feedback-data";
 import { firstName } from "@/lib/game";
+import { isSchoolDay } from "@/lib/calendar";
+import { SchoolCalendar } from "@/components/shared/SchoolCalendar";
 import { EventList } from "@/components/shared/EventList";
 import { ReportCard } from "@/components/shared/ReportCard";
 import { ScheduleGrid } from "@/components/shared/ScheduleGrid";
@@ -44,6 +46,11 @@ export default async function ParentPage({ searchParams }: { searchParams: Promi
     feedbackDay(child.id),
   ]);
   const pet = child.pet;
+  const feedbackDays = (
+    await db.lessonFeedback.findMany({ where: { studentId: child.id }, select: { day: true }, distinct: ["day"] })
+  )
+    .map((f) => f.day)
+    .filter((d) => isSchoolDay(d, feedback.calendar, feedback.lessonDays));
 
   return (
     <div>
@@ -115,6 +122,23 @@ export default async function ParentPage({ searchParams }: { searchParams: Promi
                   Grade horária de {firstName(child.name)}
                 </CardTitle>
                 <ScheduleGrid slots={schedule} />
+              </Card>
+            ),
+          },
+          {
+            id: "calendario",
+            label: "Calendário",
+            icon: <CalendarRange size={16} aria-hidden />,
+            content: (
+              <Card>
+                <CardTitle icon={<CalendarRange size={20} className="text-brand" aria-hidden />}>Calendário letivo</CardTitle>
+                <SchoolCalendar
+                  calendar={feedback.calendar}
+                  lessonWeekdays={feedback.lessonDays}
+                  today={feedback.today}
+                  streakDays={feedbackDays}
+                  streakLabel={`Dia da ofensiva de ${firstName(child.name)}`}
+                 />
               </Card>
             ),
           },

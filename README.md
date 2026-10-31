@@ -18,11 +18,13 @@ npm run db:setup              # cria o banco SQLite e carrega os dados de demons
 npm run dev                   # http://localhost:3000
 ```
 
+Para testar um build de produção sem disputar a pasta `.next` com o `npm run dev`: `NEXT_DIST_DIR=.next-test npm run build` e `NEXT_DIST_DIR=.next-test npx next start -p 3100`.
+
 Para voltar aos dados iniciais da demo: `npm run db:reset`.
 
 Sem `FEATHERLESS_API_KEY`, o humanizador de recados e o resumo das avaliações usam um texto modelo, então a demo funciona offline.
 
-A ofensiva de avaliações depende das aulas do dia. Para apresentar num fim de semana, defina um dia letivo no `.env`, por exemplo `DEMO_TODAY="2026-11-02"` (uma segunda-feira), e reinicie o servidor.
+A ofensiva de avaliações depende das aulas do dia. Para apresentar num fim de semana, defina um dia letivo no `.env`, por exemplo `DEMO_TODAY="2026-11-03"` (uma terça-feira; 02/11 é feriado de Finados no calendário), e reinicie o servidor.
 
 ## Roteiro de demonstração
 
@@ -36,7 +38,7 @@ A ofensiva de avaliações depende das aulas do dia. Para apresentar num fim de 
 8. Em **Gestor → Cadastros**, crie uma turma, um professor e um aluno, e atribua matérias à turma (um professor pode estar em várias turmas).
 9. Em **Gestor → Grade horária**, monte a semana da nova turma. Tente colocar a Prof.ª Marina na segunda às 07:30: o conflito com o 4º Ano A é bloqueado.
 10. Veja a grade em cada perfil: Aluno e Pais (grade da turma) e Professor (grade de todas as turmas dele).
-11. Como **Aluno** (Lia Fernandes Costa), abra **Avaliar aulas**, escolha cada professor com aula hoje e avalie: ao completar todos, a ofensiva sobe e o pet ganha +3 XP.
+11. Como **Aluno** (Lia Fernandes Costa), abra **Avaliar aulas** e avalie um professor com aula hoje: a ofensiva sobe na hora. Avaliando todos os professores do dia, o pet ganha +3 XP. Na aba **Calendário**, os dias da ofensiva aparecem com uma chama; feriados e recessos não alteram a ofensiva.
 12. Como **Professor**, use as abas **Chamada** (presença por matéria e dia) e **Notas** (crie uma avaliação e lance as notas). Veja o resultado no **Boletim** do Aluno e dos Pais.
 13. Como **Aluno**, abra **Ensinar o pet**, escolha um tema (ex.: Fotossíntese) e explique escrevendo ou pelo **microfone** (Chrome/Edge) — de propósito, cometa um erro ("a planta come terra"). O pet tira a dúvida com gentileza e traz a informação correta. Depois de 3 explicações, termine a aula: o pet resume o que aprendeu e ganha +5 XP.
 
@@ -52,6 +54,7 @@ Next.js 15 (App Router) + TypeScript + Tailwind CSS 4 + Lucide · Prisma 6 + SQL
 |---|---|
 | `src/lib/game.ts` | Regras puras de pontos, níveis, manutenção e sequência (testadas em `game.test.ts`) |
 | `src/lib/actions.ts` | Server actions que aplicam as regras no banco |
+| `src/lib/calendar.ts` | Calendário letivo: dias letivos, feriados, recessos e dia letivo anterior (testado em `calendar.test.ts`) |
 | `src/lib/teacher-actions.ts` | Chamada e notas lançadas pelo professor |
 | `src/lib/feedback-data.ts` | Professores a avaliar no dia e estado da ofensiva |
 | `src/lib/clock.ts` | "Hoje" da aplicação (respeita `DEMO_TODAY`) |

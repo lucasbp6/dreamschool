@@ -3,6 +3,7 @@ import {
   BookOpen,
   Brain,
   CalendarDays,
+  CalendarRange,
   ClipboardCheck,
   GraduationCap,
   Hammer,
@@ -15,6 +16,8 @@ import { now } from "@/lib/clock";
 import { dayKey } from "@/lib/game";
 import { getActingUser } from "@/lib/session";
 import { teacherSchedule } from "@/lib/schedule-data";
+import { loadCalendar } from "@/lib/calendar-data";
+import { SchoolCalendar } from "@/components/shared/SchoolCalendar";
 import { EventList } from "@/components/shared/EventList";
 import { ScheduleGrid } from "@/components/shared/ScheduleGrid";
 import { Tabs } from "@/components/shared/Tabs";
@@ -43,7 +46,8 @@ export default async function TeacherPage({ searchParams }: { searchParams: Prom
   const mineIds = mine.map((a) => a.id);
   const today = dayKey(now());
 
-  const [classroom, schedule, attendance, assessments] = await Promise.all([
+  const teachingWeekdays = [...new Set(assignments.flatMap((a) => a.slots.map((s) => s.weekday)))].sort();
+  const [classroom, schedule, attendance, assessments, calendar] = await Promise.all([
     selectedId
       ? db.classroom.findUnique({
           where: { id: selectedId },
@@ -62,6 +66,7 @@ export default async function TeacherPage({ searchParams }: { searchParams: Prom
       orderBy: { date: "asc" },
       include: { grades: { select: { studentId: true, score: true } } },
     }),
+    loadCalendar(teacher.schoolId),
   ]);
 
   if (!classroom) {
@@ -202,6 +207,21 @@ export default async function TeacherPage({ searchParams }: { searchParams: Prom
                   Minha grade horária (todas as turmas)
                 </CardTitle>
                 <ScheduleGrid slots={schedule} />
+              </Card>
+            ),
+          },
+          {
+            id: "calendario",
+            label: "Calendário",
+            icon: <CalendarRange size={16} aria-hidden />,
+            content: (
+              <Card>
+                <CardTitle icon={<CalendarRange size={20} className="text-brand" aria-hidden />}>Calendário letivo (dias com as suas aulas)</CardTitle>
+                <SchoolCalendar
+                  calendar={calendar}
+                  lessonWeekdays={teachingWeekdays}
+                  today={today}
+                 />
               </Card>
             ),
           },

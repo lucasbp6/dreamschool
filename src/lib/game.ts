@@ -222,31 +222,34 @@ export function dayKey(date = new Date()): string {
 }
 
 // ---------- Ofensiva de avaliações ----------
-// Avaliar todos os professores que deram aula no dia rende um bônus pequeno de XP só para o pet.
+// A ofensiva sobe na primeira avaliação de cada dia letivo; avaliar todos os professores que deram aula
+// no dia rende ainda um bônus pequeno de XP só para o pet. Dias sem aula (fim de semana, feriado,
+// recesso, fora do período letivo) não mexem na ofensiva: o "dia anterior" é sempre o dia letivo anterior.
 
 export const FEEDBACK_STREAK_XP = 3;
 
 export type FeedbackStreakState = { feedbackStreak: number; lastFeedbackDay: string | null };
 
 /**
- * Fecha o dia da ofensiva. `previousSchoolDay` é o último dia anterior com aulas na grade:
- * se o aluno completou aquele dia, a ofensiva continua; senão recomeça em 1. Fins de semana não quebram.
+ * Avança a ofensiva ao avaliar num dia letivo: continua se o aluno avaliou no dia letivo anterior,
+ * senão recomeça em 1. Uma vez por dia (avaliar mais professores no mesmo dia não soma de novo).
  */
-export function completeFeedbackDay(
+export function advanceFeedbackStreak(
   state: FeedbackStreakState,
   today: string,
   previousSchoolDay: string | null,
-): FeedbackStreakState & { xpBonus: number } {
-  if (state.lastFeedbackDay === today) return { ...state, xpBonus: 0 };
+): FeedbackStreakState & { changed: boolean } {
+  if (state.lastFeedbackDay === today) return { ...state, changed: false };
   const continues = previousSchoolDay !== null && state.lastFeedbackDay === previousSchoolDay;
-  return {
-    feedbackStreak: continues ? state.feedbackStreak + 1 : 1,
-    lastFeedbackDay: today,
-    xpBonus: FEEDBACK_STREAK_XP,
-  };
+  return { feedbackStreak: continues ? state.feedbackStreak + 1 : 1, lastFeedbackDay: today, changed: true };
 }
 
-/** Ofensiva exibida hoje: se o último dia completo ficou para trás de um dia letivo, ela já não vale. */
+/** Bônus de XP do dia: todos os professores com aula hoje avaliados, uma vez por dia. */
+export function earnsFeedbackBonus(rated: number, required: number, bonusDay: string | null, today: string) {
+  return required > 0 && rated >= required && bonusDay !== today;
+}
+
+/** Ofensiva exibida hoje: vale enquanto o último dia avaliado for hoje ou o dia letivo anterior. */
 export function currentFeedbackStreak(state: FeedbackStreakState, today: string, previousSchoolDay: string | null) {
   if (state.lastFeedbackDay === today || state.lastFeedbackDay === previousSchoolDay) return state.feedbackStreak;
   return 0;

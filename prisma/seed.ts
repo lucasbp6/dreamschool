@@ -2,7 +2,9 @@
 import { PrismaClient } from "@prisma/client";
 import { now } from "../src/lib/clock";
 import { dayKey } from "../src/lib/game";
-import { previousSchoolDay, validateSlot, type ExistingSlot } from "../src/lib/schedule";
+import { validateSlot, type ExistingSlot } from "../src/lib/schedule";
+import { isSchoolDay, previousSchoolDay } from "../src/lib/calendar";
+import { CALENDAR } from "./calendar-2026";
 
 const prisma = new PrismaClient();
 
@@ -26,9 +28,13 @@ async function main() {
   await prisma.pet.deleteMany();
   await prisma.classroom.deleteMany();
   await prisma.user.deleteMany();
+  await prisma.calendarDay.deleteMany();
   await prisma.school.deleteMany();
 
-  const school = await prisma.school.create({ data: { name: "Escola dos Sonhos" } });
+  const school = await prisma.school.create({
+    data: { name: "Escola dos Sonhos", termStart: CALENDAR.termStart, termEnd: CALENDAR.termEnd },
+  });
+  await prisma.calendarDay.createMany({ data: CALENDAR.days.map((d) => ({ ...d, schoolId: school.id })) });
   const user = (name: string, role: string, extra: Record<string, string> = {}) =>
     prisma.user.create({ data: { name, role, schoolId: school.id, ...extra } });
 
@@ -207,11 +213,14 @@ async function seedAcademics(classroomIds: string[], streakers: string[]) {
   const today = dayKey(now());
   for (const classroomId of classroomIds) {
     const classSubjects = await prisma.classSubject.findMany({ where: { classroomId }, include: { slots: true } });
+    const lessonDays = [...new Set(classSubjects.flatMap((cs) => cs.slots.map((s) => s.weekday)))];
     const students = await prisma.user.findMany({ where: { classroomId }, orderBy: { name: "asc" }, include: { pet: true } });
 
     for (let back = 14; back >= 1; back--) {
       const date = daysAgo(back);
       const day = dayKey(date);
+      // Só dias letivos têm chamada e avaliação (fim de semana, feriado e recesso ficam de fora).
+      if (!isSchoolDay(day, CALENDAR, lessonDays)) continue;
       const todays = classSubjects.filter((cs) => cs.slots.some((s) => s.weekday === date.getDay()));
       for (const [ci, cs] of todays.entries()) {
         for (const [si, st] of students.entries()) {
@@ -256,15 +265,16 @@ async function seedAcademics(classroomIds: string[], streakers: string[]) {
       }
     }
 
-    // Quem avaliou todos os dias tem a ofensiva acesa até o último dia letivo.
-    const lessonDays = new Set(classSubjects.flatMap((cs) => cs.slots.map((s) => s.weekday)));
-    const lastSchoolDay = previousSchoolDay(today, lessonDays);
-    const schoolDaysInWindow = Array.from({ length: 14 }, (_, i) => daysAgo(i + 1)).filter((d) => lessonDays.has(d.getDay())).length;
+    // Quem avaliou todos os dias letivos tem a ofensiva acesa até o último dia letivo.
+    const lastSchoolDay = previousSchoolDay(today, CALENDAR, lessonDays);
+    const schoolDaysInWindow = Array.from({ length: 14 }, (_, i) => dayKey(daysAgo(i + 1))).filter((d) =>
+      isSchoolDay(d, CALENDAR, lessonDays),
+    ).length;
     for (const st of students) {
       if (st.pet && streakers.includes(st.name)) {
         await prisma.pet.update({
           where: { id: st.pet.id },
-          data: { feedbackStreak: schoolDaysInWindow, lastFeedbackDay: lastSchoolDay },
+          data: { feedbackStreak: schoolDaysInWindow, lastFeedbackDay: lastSchoolDay, feedbackBonusDay: lastSchoolDay },
         });
       }
     }

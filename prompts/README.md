@@ -13,3 +13,4 @@ Cada prompt enviado durante o desenvolvimento fica em um arquivo numerado, com o
 | 007 | [007-desempenho-ia-e-mentor-do-pet.md](007-desempenho-ia-e-mentor-do-pet.md) | Lentidão do resumo com IA e conversa aluno-mentor com o pet |
 | 008 | [008-audio-e-modelo-32b.md](008-audio-e-modelo-32b.md) | Explicação por áudio e avaliação do Qwen 32B na mentoria |
 | 009 | [009-mentoria-correcoes-e-modelo-maior.md](009-mentoria-correcoes-e-modelo-maior.md) | Correções no "Ensinar o pet" e avaliação de modelo maior |
+| 010 | [010-calendario-letivo-e-ofensiva.md](010-calendario-letivo-e-ofensiva.md) | Calendário letivo e ofensiva que sobe na hora |

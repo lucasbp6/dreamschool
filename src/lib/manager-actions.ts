@@ -7,6 +7,7 @@ import { db } from "./db";
 import { getActingUser } from "./session";
 import { BUILDING_TYPES, PET_TYPES } from "./game";
 import { validateSlot, type ExistingSlot } from "./schedule";
+import { DAY_KINDS, addDays, type DayKind } from "./calendar";
 
 export type FormState = { ok: boolean; message: string } | null;
 
@@ -175,5 +176,53 @@ export async function addScheduleSlot(_: FormState, fd: FormData): Promise<FormS
 
 export async function removeScheduleSlot(slotId: string) {
   await db.scheduleSlot.delete({ where: { id: slotId } });
+  revalidatePath("/", "layout");
+}
+
+// ---------- Calendário letivo ----------
+
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+export async function saveTerm(_: FormState, fd: FormData): Promise<FormState> {
+  const termStart = text(fd, "termStart");
+  const termEnd = text(fd, "termEnd");
+  if (!DATE_RE.test(termStart) || !DATE_RE.test(termEnd)) return fail("Informe o início e o fim do período letivo.");
+  if (termEnd <= termStart) return fail("O fim do período precisa ser depois do início.");
+  await db.school.update({ where: { id: await schoolId() }, data: { termStart, termEnd } });
+  return done("Período letivo salvo.");
+}
+
+/** Marca um dia ou um intervalo (ex.: recesso de julho) como feriado, recesso ou evento. */
+export async function addCalendarDays(_: FormState, fd: FormData): Promise<FormState> {
+  const kind = text(fd, "kind");
+  const label = text(fd, "label");
+  const start = text(fd, "start");
+  const end = text(fd, "end") || start;
+  if (!(kind in DAY_KINDS)) return fail("Escolha o tipo do dia.");
+  if (!label) return fail("Dê um nome (ex.: Finados, Recesso de julho, Feira de Ciências).");
+  if (!DATE_RE.test(start) || !DATE_RE.test(end)) return fail("Escolha as datas.");
+  if (end < start) return fail("A data final precisa ser depois da inicial.");
+
+  const dates: string[] = [];
+  for (let d = start; d <= end; d = addDays(d, 1)) dates.push(d);
+  if (dates.length > 120) return fail("Marque no máximo 120 dias de uma vez.");
+
+  const sid = await schoolId();
+  await db.$transaction(
+    dates.map((date) =>
+      db.calendarDay.upsert({
+        where: { schoolId_date: { schoolId: sid, date } },
+        update: { kind, label },
+        create: { schoolId: sid, date, kind, label },
+      }),
+    ),
+  );
+  const what = DAY_KINDS[kind as DayKind].label.toLowerCase();
+  return done(dates.length === 1 ? `${label} marcado como ${what}.` : `${dates.length} dias marcados como ${what}: ${label}.`);
+}
+
+export async function removeCalendarDays(ids: string[]) {
+  const sid = await schoolId();
+  await db.calendarDay.deleteMany({ where: { id: { in: ids }, schoolId: sid } });
   revalidatePath("/", "layout");
 }

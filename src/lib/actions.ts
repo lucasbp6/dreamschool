@@ -18,7 +18,9 @@ import {
   ROLE_PATHS,
   applyAttention,
   applyPositive,
-  completeFeedbackDay,
+  FEEDBACK_STREAK_XP,
+  advanceFeedbackStreak,
+  earnsFeedbackBonus,
   dayKey,
   type AttentionCategory,
   type Mood,
@@ -148,32 +150,48 @@ export async function submitLessonFeedback(
     },
   });
 
-  let message = `Obrigado! Sua avaliação para ${teacher.name} foi enviada. 💜`;
   const pet = student.pet;
-  const nowComplete =
-    teacher.hasLessonToday && before.required > 0 && before.ratedRequired + 1 === before.required;
-  if (pet && nowComplete) {
-    const r = completeFeedbackDay(pet, today, before.previousSchoolDay);
-    if (r.xpBonus > 0) {
+  const parts = [`Obrigado! Sua avaliação para ${teacher.name} foi enviada.`];
+
+  // Só dia letivo mexe na ofensiva; em feriado, recesso ou fim de semana a avaliação é salva e a ofensiva fica como está.
+  if (pet && before.schoolDay) {
+    const streak = advanceFeedbackStreak(pet, today, before.previousSchoolDay);
+    const ratedNow = before.ratedRequired + (teacher.hasLessonToday ? 1 : 0);
+    const bonus = earnsFeedbackBonus(ratedNow, before.required, pet.feedbackBonusDay, today);
+
+    if (streak.changed || bonus) {
       await db.$transaction([
         db.pet.update({
           where: { id: pet.id },
-          data: { feedbackStreak: r.feedbackStreak, lastFeedbackDay: r.lastFeedbackDay, xp: { increment: r.xpBonus } },
-        }),
-        db.event.create({
           data: {
-            type: "STREAK",
-            category: "Ofensiva de avaliações",
-            note: `${r.feedbackStreak} dia(s) seguidos avaliando todos os professores`,
-            xpDelta: r.xpBonus,
-            studentId,
-            classroomId: student.classroomId,
+            feedbackStreak: streak.feedbackStreak,
+            lastFeedbackDay: streak.lastFeedbackDay,
+            ...(bonus ? { xp: { increment: FEEDBACK_STREAK_XP }, feedbackBonusDay: today } : {}),
           },
         }),
+        ...(bonus
+          ? [
+              db.event.create({
+                data: {
+                  type: "STREAK",
+                  category: "Ofensiva de avaliações",
+                  note: `Avaliou todos os professores do dia · ofensiva de ${streak.feedbackStreak} dia(s)`,
+                  xpDelta: FEEDBACK_STREAK_XP,
+                  studentId,
+                  classroomId: student.classroomId,
+                },
+              }),
+            ]
+          : []),
       ]);
-      message = `🔥 Ofensiva de ${r.feedbackStreak} dia(s)! Você avaliou todos os professores de hoje: +${r.xpBonus} XP para ${pet.petName}.`;
     }
+    if (streak.changed) parts.push(`🔥 Ofensiva: ${streak.feedbackStreak} dia(s) seguidos!`);
+    if (bonus) parts.push(`Você avaliou todos os professores de hoje: +${FEEDBACK_STREAK_XP} XP para ${pet.petName}.`);
+  } else if (pet && !before.schoolDay) {
+    parts.push(`Hoje não é dia letivo (${before.noSchoolReason}), então a ofensiva não muda.`);
   }
+
+  const message = parts.join(" ");
   revalidateAll();
   return { ok: true, message };
 }

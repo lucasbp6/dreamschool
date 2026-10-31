@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { overlaps, previousSchoolDay, validateSlot, type ExistingSlot } from "./schedule";
+import { overlaps, validateSlot, type ExistingSlot } from "./schedule";
 
 const existing: ExistingSlot[] = [
   {
@@ -40,17 +40,5 @@ describe("grade horária", () => {
 
   it("aceita aula sem conflito", () => {
     expect(validateSlot({ weekday: 1, startTime: "07:30", endTime: "08:20", classroomId: "5B", teacherId: "carlos" }, existing)).toBeNull();
-  });
-});
-
-describe("dia letivo anterior", () => {
-  it("de segunda volta para sexta", () => {
-    expect(previousSchoolDay("2026-10-26", [1, 2, 3, 4, 5])).toBe("2026-10-23");
-  });
-  it("de quarta volta para terça", () => {
-    expect(previousSchoolDay("2026-10-28", [1, 2, 3, 4, 5])).toBe("2026-10-27");
-  });
-  it("sem aulas não há dia anterior", () => {
-    expect(previousSchoolDay("2026-10-28", [])).toBeNull();
   });
 });

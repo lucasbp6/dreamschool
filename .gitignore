@@ -10,6 +10,7 @@
 
 # Build e Cache do Next.js
 /.next/
+/.next-test/
 /out/
 /build
 next-env.d.ts

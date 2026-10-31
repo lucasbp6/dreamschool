@@ -16,10 +16,24 @@ type Props = {
   streak: number;
   required: number;
   ratedRequired: number;
-  completedToday: boolean;
+  /** A ofensiva já subiu hoje (o aluno avaliou alguém neste dia letivo). */
+  streakCountedToday: boolean;
+  bonusToday: boolean;
+  /** Motivo de hoje não ser dia letivo (ex.: "feriado: Finados"), ou null. */
+  noSchoolReason: string | null;
 };
 
-export function LessonFeedbackForm({ studentId, petName, teachers, streak, required, ratedRequired, completedToday }: Props) {
+export function LessonFeedbackForm({
+  studentId,
+  petName,
+  teachers,
+  streak,
+  required,
+  ratedRequired,
+  streakCountedToday,
+  bonusToday,
+  noSchoolReason,
+}: Props) {
   const [teacherId, setTeacherId] = useState<string | null>(null);
   const [stars, setStars] = useState(0);
   const [comment, setComment] = useState("");
@@ -49,7 +63,12 @@ export function LessonFeedbackForm({ studentId, petName, teachers, streak, requi
         </div>
         {required > 0 ? (
           <>
-            <p className="mt-3 text-sm text-ink">
+            <p className="mt-3 text-sm font-bold text-ink">
+              {streakCountedToday
+                ? "Hoje já conta para a sua ofensiva!"
+                : "Avalie um professor de hoje para a ofensiva subir."}
+            </p>
+            <p className="mt-2 text-sm text-ink">
               Hoje: <strong>{ratedRequired} de {required}</strong> professores avaliados.
             </p>
             <div className="mt-2 flex gap-1.5" aria-hidden>
@@ -58,14 +77,15 @@ export function LessonFeedbackForm({ studentId, petName, teachers, streak, requi
               ))}
             </div>
             <p className="mt-3 text-sm text-muted">
-              {completedToday
-                ? `Dia completo! ${petName} ganhou +${FEEDBACK_STREAK_XP} XP. Volte amanhã para manter a ofensiva.`
-                : `Avalie todos os professores que deram aula hoje e ganhe +${FEEDBACK_STREAK_XP} XP para ${petName}.`}
+              {bonusToday
+                ? `Dia completo! ${petName} ganhou +${FEEDBACK_STREAK_XP} XP. Volte no próximo dia de aula para manter a ofensiva.`
+                : `Avaliando todos os professores que deram aula hoje, ${petName} ganha +${FEEDBACK_STREAK_XP} XP de bônus.`}
             </p>
           </>
         ) : (
           <p className="mt-3 text-sm text-muted">
-            Hoje não tem aula na sua grade, então a ofensiva fica guardadinha até o próximo dia letivo. 😴
+            Hoje não é dia letivo{noSchoolReason ? ` (${noSchoolReason})` : ""}, então a ofensiva fica guardadinha até o
+            próximo dia de aula. Você ainda pode avaliar, mas a ofensiva não muda.
           </p>
         )}
       </Card>

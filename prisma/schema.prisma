@@ -11,11 +11,14 @@ datasource db {
 }
 
 model School {
-  id         String      @id @default(cuid())
+  id         String        @id @default(cuid())
   name       String
   classrooms Classroom[]
   users      User[]
   subjects   Subject[]
+  termStart  String? // YYYY-MM-DD: início do período letivo
+  termEnd    String? // YYYY-MM-DD: fim do período letivo
+  calendar   CalendarDay[]
 }
 
 model Classroom {
@@ -59,16 +62,17 @@ model User {
 }
 
 model Pet {
-  id              String  @id @default(cuid())
-  petType         String // CAT | OWL | BEAR | BUNNY | FOX | DOG | DRAGON
-  petName         String
-  xp              Int     @default(0)
-  mood            String  @default("NEUTRAL") // HAPPY | NEUTRAL | TIRED
-  recoveryMission String?
-  feedbackStreak  Int     @default(0) // ofensiva: dias seguidos avaliando todos os professores do dia
-  lastFeedbackDay String? // YYYY-MM-DD do último dia completo da ofensiva
-  studentId       String  @unique
-  student         User    @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  id               String  @id @default(cuid())
+  petType          String // CAT | OWL | BEAR | BUNNY | FOX | DOG | DRAGON
+  petName          String
+  xp               Int     @default(0)
+  mood             String  @default("NEUTRAL") // HAPPY | NEUTRAL | TIRED
+  recoveryMission  String?
+  feedbackStreak   Int     @default(0) // ofensiva: dias seguidos avaliando todos os professores do dia
+  lastFeedbackDay  String? // YYYY-MM-DD do último dia letivo em que avaliou professores (ofensiva)
+  feedbackBonusDay String? // YYYY-MM-DD em que ganhou o bônus por avaliar todos os professores do dia
+  studentId        String  @unique
+  student          User    @relation(fields: [studentId], references: [id], onDelete: Cascade)
 }
 
 model Event {
@@ -218,4 +222,16 @@ model MentorMessage {
   createdAt DateTime      @default(now())
   sessionId String
   session   MentorSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+}
+
+// Dia especial do calendário escolar. HOLIDAY e RECESS não têm aula; EVENT é dia letivo com evento.
+model CalendarDay {
+  id       String @id @default(cuid())
+  date     String // YYYY-MM-DD
+  kind     String // HOLIDAY | RECESS | EVENT
+  label    String
+  schoolId String
+  school   School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+
+  @@unique([schoolId, date])
 }

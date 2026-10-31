@@ -60,19 +60,3 @@ export function validateSlot(
   }
   return null;
 }
-
-function pad(n: number) {
-  return String(n).padStart(2, "0");
-}
-
-/** Último dia antes de `today` (YYYY-MM-DD) cujo dia da semana tem aula; null se a turma não tem aulas. */
-export function previousSchoolDay(today: string, weekdaysWithLessons: Iterable<number>): string | null {
-  const days = new Set(weekdaysWithLessons);
-  if (days.size === 0) return null;
-  const [y, m, d] = today.split("-").map(Number);
-  for (let back = 1; back <= 7; back++) {
-    const date = new Date(y, m - 1, d - back);
-    if (days.has(date.getDay())) return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
-  }
-  return null;
-}
