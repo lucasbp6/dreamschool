@@ -33,7 +33,7 @@ function persona(ctx: MentorContext) {
     `- Se a explicação estiver correta, comemore de forma breve e faça UMA pergunta curiosa que ajude ${mentor} a ` +
     `aprofundar ou dar um exemplo.\n` +
     `- Se houver um erro, NÃO diga que está errado de forma dura. Mostre a dúvida com gentileza ` +
-    `("Hmm, fiquei confuso... eu tinha ouvido que..."), e SEMPRE diga a informação correta de forma clara e completa ` +
+    `("Hmm, fiquei com uma dúvida... eu tinha ouvido que..."), e SEMPRE diga a informação correta de forma clara e completa ` +
     `em uma frase (com o número, o nome ou a regra certa, e um exemplo simples se ajudar). Não dê só pistas. ` +
     `Depois peça para ${mentor} conferir com você.\n` +
     `- Se a explicação estiver certa, não invente que falta algo.\n` +
@@ -42,12 +42,36 @@ function persona(ctx: MentorContext) {
     `- Nunca invente fatos. Se não tiver certeza, diga que vocês podem perguntar ao professor.\n` +
     `- Fique no tema da aula. Se a conversa fugir do tema ou tiver algo inadequado ou dados pessoais, volte ` +
     `gentilmente para "${ctx.topic}".\n` +
-    `- Não fale que é uma inteligência artificial e não use listas nem markdown.`
+    `- Não fale que é uma inteligência artificial. Escreva só a sua fala: sem ações entre asteriscos, sem ` +
+    `observações entre parênteses, sem emojis, listas ou markdown.`
   );
 }
 
-export function greeting(ctx: MentorContext) {
-  return `Oba, ${firstName(ctx.studentName)}! Hoje você vai me ensinar sobre ${ctx.topic}? Estou prontinho para aprender! Por onde a gente começa?`;
+/** Mensagens para o pet abrir a aula: uma pergunta específica sobre o tema e um convite para o aluno contar o que sabe ou o que acha difícil. */
+export function openerMessages(ctx: MentorContext): ChatCompletionMessageParam[] {
+  const mentor = firstName(ctx.studentName);
+  return [
+    { role: "system", content: persona(ctx) },
+    {
+      role: "user",
+      content:
+        `Comece a aula agora, falando com ${mentor}. Em até 3 frases curtas: cumprimente ${mentor} pelo nome, ` +
+        `faça UMA pergunta curiosa e específica sobre "${ctx.topic}" (um conceito, um exemplo ou uma situação do ` +
+        `dia a dia que se aprende no ensino fundamental) e convide ${mentor} a contar o que já sabe ou qual parte ` +
+        `acha mais difícil. Não comece com "Oba". Responda só com a sua fala.`,
+    },
+  ];
+}
+
+/** Aberturas prontas (sem IA), variando entre perguntar algo, pedir o que sabe e pedir o que é difícil. */
+export function fallbackOpener(ctx: MentorContext, variant: number) {
+  const mentor = firstName(ctx.studentName);
+  const lines = [
+    `Oi, ${mentor}! Fiquei curioso com ${ctx.topic}: qual é a coisa mais importante que eu preciso saber? E tem alguma parte que você acha difícil?`,
+    `Que bom te ver, ${mentor}! Me conta o que você já sabe sobre ${ctx.topic}? Se alguma parte te deixa com dúvida, me fala que a gente descobre junto!`,
+    `${mentor}, hoje a aula é sobre ${ctx.topic}! Você consegue me dar um exemplo disso no dia a dia? E qual parte você acha mais difícil de explicar?`,
+  ];
+  return lines[Math.abs(variant) % lines.length];
 }
 
 /** Mensagens para o modelo responder como o pet, usando só o histórico mais recente. */
@@ -97,4 +121,47 @@ export function fallbackRecap(ctx: MentorContext) {
 /** A aula vale XP uma vez por dia, quando o aluno explicou o suficiente. */
 export function earnsMentorXp(explanations: number, alreadyRewardedToday: boolean) {
   return explanations >= MENTOR_MIN_EXPLANATIONS && !alreadyRewardedToday;
+}
+
+/** Mais repetições seguidas do mesmo caractere do que isso indicam que o modelo "degenerou" ("!!!!!!…"). */
+const MAX_REPEAT = 4;
+
+/**
+ * Filtro aplicado à fala do pet enquanto ela chega em streaming: remove ações entre asteriscos
+ * ("*bate as asinhas*") e emojis, que alguns modelos insistem em escrever apesar do prompt, e
+ * para de repassar o texto se o modelo degenerar em repetições ("mud!!!!!!!!…").
+ */
+export function createSpeechFilter() {
+  let insideAsterisks = false;
+  let last = "";
+  let run = 0;
+  let broken = false;
+  return (chunk: string) => {
+    let out = "";
+    for (const ch of chunk.replace(/[\p{Extended_Pictographic}\u{FE0F}\u{200D}]/gu, "")) {
+      if (broken) break;
+      if (ch === "*") {
+        insideAsterisks = !insideAsterisks;
+        continue;
+      }
+      if (insideAsterisks) continue;
+      run = ch === last && ch.trim() ? run + 1 : 1;
+      last = ch;
+      if (run > MAX_REPEAT) {
+        broken = true;
+        break;
+      }
+      out += ch;
+    }
+    return out;
+  };
+}
+
+/** Acabamento do texto: corta repetições degeneradas, espaços repetidos e espaço antes de pontuação. */
+export function tidySpeech(text: string) {
+  return text
+    .replace(new RegExp(`(\\S)\\1{${MAX_REPEAT},}[\\s\\S]*$`, "u"), "$1")
+    .replace(/[ \t]{2,}/g, " ")
+    .replace(/ +([,.!?…])/g, "$1")
+    .trim();
 }

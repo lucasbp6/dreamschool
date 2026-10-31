@@ -4,15 +4,29 @@
 // /api/mentor/[sessionId], em streaming.
 import { revalidatePath } from "next/cache";
 import { db } from "./db";
-import { MENTOR_MODEL, MENTOR_TIMEOUT_MS, complete, warmUp } from "./ai";
+import { MENTOR_FALLBACK_MODEL, MENTOR_MODEL, MENTOR_TIMEOUT_MS, complete, warmUp } from "./ai";
 import { now } from "./clock";
 import { dayKey, firstName } from "./game";
 import { getActingUser } from "./session";
-import { MENTOR_MIN_EXPLANATIONS, MENTOR_XP, earnsMentorXp, fallbackRecap, greeting, recapMessages } from "./mentor";
+import {
+  MENTOR_MIN_EXPLANATIONS,
+  MENTOR_XP,
+  createSpeechFilter,
+  earnsMentorXp,
+  fallbackRecap,
+  recapMessages,
+  tidySpeech,
+} from "./mentor";
 import { loadOwnSession } from "./mentor-data";
 
-export type MentorStart = { ok: true; sessionId: string } | { ok: false; message: string };
+export type MentorStart =
+  | { ok: true; session: { id: string; subjectName: string; topic: string } }
+  | { ok: false; message: string };
 
+/**
+ * Cria a aula e já a devolve para a tela abrir na hora (sem depender de revalidar a página).
+ * A fala de abertura do pet é gerada em seguida, em streaming, pela rota /api/mentor/[sessionId].
+ */
 export async function startMentorSession(subjectName: string, topic: string): Promise<MentorStart> {
   const student = await getActingUser("STUDENT");
   const pet = await db.pet.findUnique({ where: { studentId: student.id } });
@@ -29,22 +43,8 @@ export async function startMentorSession(subjectName: string, topic: string): Pr
   const session = await db.mentorSession.create({
     data: { studentId: student.id, subjectName: subjectName.trim(), topic: cleanTopic, day: dayKey(now()) },
   });
-  await db.mentorMessage.create({
-    data: {
-      sessionId: session.id,
-      role: "PET",
-      usedAi: false,
-      content: greeting({
-        petName: pet.petName,
-        petType: pet.petType,
-        studentName: student.name,
-        subjectName: session.subjectName,
-        topic: session.topic,
-      }),
-    },
-  });
   revalidatePath("/student");
-  return { ok: true, sessionId: session.id };
+  return { ok: true, session: { id: session.id, subjectName: session.subjectName, topic: session.topic } };
 }
 
 export type MentorEnd = { ok: boolean; message: string; recap?: string; xp?: number };
@@ -56,15 +56,20 @@ export async function endMentorSession(sessionId: string): Promise<MentorEnd> {
   if (session.endedAt) return { ok: true, message: "Esta aula já terminou.", recap: session.recap ?? undefined };
 
   const explanations = history.filter((m) => m.role === "STUDENT").length;
-  const recap =
+  const aiRecap =
     explanations > 0
-      ? ((await complete("recap do pet", recapMessages(ctx, history), {
+      ? await complete("recap do pet", recapMessages(ctx, history), {
           temperature: 0.5,
           maxTokens: 220,
           model: MENTOR_MODEL,
+          fallbackModel: MENTOR_FALLBACK_MODEL,
           timeoutMs: MENTOR_TIMEOUT_MS,
-        })) ??
-        fallbackRecap(ctx))
+        })
+      : null;
+  const recap = aiRecap
+    ? tidySpeech(createSpeechFilter()(aiRecap))
+    : explanations > 0
+      ? fallbackRecap(ctx)
       : `Tudo bem, ${firstName(ctx.studentName)}! Quando quiser, é só me ensinar sobre ${ctx.topic}.`;
 
   const today = dayKey(now());

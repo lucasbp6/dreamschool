@@ -35,7 +35,8 @@ const ERRORS: Record<string, string> = {
 
 /**
  * `start(prefix)` começa a ouvir e chama `onText(prefix + transcrição)` a cada trecho reconhecido,
- * para o texto aparecer na caixa enquanto o aluno fala.
+ * para o texto aparecer na caixa enquanto o aluno fala. `stop()` encerra e entrega o trecho final;
+ * `cancel()` encerra e descarta qualquer resultado que ainda chegue (usado ao enviar a mensagem).
  */
 export function useSpeechToText(onText: (text: string) => void, lang = "pt-BR") {
   const [supported, setSupported] = useState(false);
@@ -60,14 +61,21 @@ export function useSpeechToText(onText: (text: string) => void, lang = "pt-BR") 
       r.interimResults = true;
       const base = prefix.trim() ? `${prefix.trim()} ` : "";
       r.onresult = (e) => {
+        // Resultados atrasados de uma escuta cancelada não podem reescrever a caixa de texto.
+        if (rec.current !== r) return;
         let transcript = "";
         for (let i = 0; i < e.results.length; i++) transcript += e.results[i][0].transcript;
         onTextRef.current(base + transcript.trim());
       };
       r.onerror = (e) => {
-        if (e.error !== "aborted") setError(ERRORS[e.error] ?? "Não consegui ouvir agora. Você pode escrever.");
+        if (rec.current === r && e.error !== "aborted")
+          setError(ERRORS[e.error] ?? "Não consegui ouvir agora. Você pode escrever.");
       };
-      r.onend = () => setListening(false);
+      r.onend = () => {
+        if (rec.current !== r) return; // fim de uma escuta antiga: não mexe na atual
+        rec.current = null;
+        setListening(false);
+      };
       setError(null);
       setListening(true);
       rec.current = r;
@@ -78,5 +86,12 @@ export function useSpeechToText(onText: (text: string) => void, lang = "pt-BR") 
 
   const stop = useCallback(() => rec.current?.stop(), []);
 
-  return { supported, listening, error, start, stop };
+  const cancel = useCallback(() => {
+    const r = rec.current;
+    rec.current = null;
+    r?.abort();
+    setListening(false);
+  }, []);
+
+  return { supported, listening, error, start, stop, cancel };
 }

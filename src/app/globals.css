@@ -142,6 +142,13 @@ body {
 .cloud-slow { animation: cloud-drift 65s linear infinite; }
 .twinkle { animation: twinkle 2.4s ease-in-out infinite; }
 
+/* Barrinhas de som enquanto o ditado está ouvindo. */
+@keyframes eq {
+  0%, 100% { transform: scaleY(0.35); }
+  50% { transform: scaleY(1); }
+}
+.eq-bar { transform-origin: bottom; animation: eq 0.9s ease-in-out infinite; }
+
 .scene-sky { background: linear-gradient(180deg, var(--sky-top), var(--sky-bottom)); }
 .scene-cloud { fill: var(--cloud); }
 .scene-cloud-deep { fill: var(--cloud-deep); }
@@ -151,5 +158,5 @@ html.hc .scene-cloud, html.hc .scene-cloud-deep { stroke: var(--line); stroke-wi
 html.hc .cloud, html.hc .cloud-slow { display: none; }
 
 @media (prefers-reduced-motion: reduce) {
-  .pet-happy, .pet-tired, .pet-idle, .cloud, .cloud-slow, .twinkle { animation: none; }
+  .pet-happy, .pet-tired, .pet-idle, .cloud, .cloud-slow, .twinkle, .eq-bar { animation: none; }
 }

@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
-import { GraduationCap, Mic, MicOff, Send, Sparkles } from "lucide-react";
+import { GraduationCap, Mic, Send, Sparkles, Square } from "lucide-react";
 import { endMentorSession, startMentorSession, type MentorEnd } from "@/lib/mentor-actions";
-import { MENTOR_MAX_CHARS, MENTOR_MIN_EXPLANATIONS, MENTOR_XP } from "@/lib/mentor";
+import { MENTOR_MAX_CHARS, MENTOR_MIN_EXPLANATIONS, MENTOR_XP, tidySpeech } from "@/lib/mentor";
 import { PetArt } from "@/components/shared/PetArt";
 import { Card, CardTitle } from "@/components/shared/ui";
 import { useSpeechToText } from "@/components/shared/useSpeechToText";
@@ -23,6 +23,14 @@ const control = "rounded-xl border border-line bg-surface px-3 py-2 font-semibol
 const fmt = new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "short" });
 
 export function MentorChat({ subjects, pet, active, past }: Props) {
+  // A aula aberta vem do servidor, mas a tela também a abre na hora com o retorno da ação,
+  // sem depender de a página ser revalidada.
+  const [current, setCurrent] = useState<Session | null>(active);
+  const [syncedId, setSyncedId] = useState(active?.id);
+  if (active?.id !== syncedId) {
+    setSyncedId(active?.id);
+    setCurrent(active);
+  }
   const [ended, setEnded] = useState<(MentorEnd & { topic: string }) | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -32,14 +40,23 @@ export function MentorChat({ subjects, pet, active, past }: Props) {
       setError(null);
       setEnded(null);
       const r = await startMentorSession(String(fd.get("subject") ?? ""), String(fd.get("topic") ?? ""));
-      if (!r.ok) setError(r.message);
+      if (r.ok) setCurrent({ ...r.session, messages: [] });
+      else setError(r.message);
     });
 
   return (
     <div className="grid gap-5 lg:grid-cols-3">
       <div className="space-y-4 lg:col-span-2">
-        {active ? (
-          <ChatRoom key={active.id} session={active} pet={pet} onEnded={(r) => setEnded({ ...r, topic: active.topic })} />
+        {current ? (
+          <ChatRoom
+            key={current.id}
+            session={current}
+            pet={pet}
+            onEnded={(r) => {
+              setEnded({ ...r, topic: current.topic });
+              setCurrent(null);
+            }}
+          />
         ) : (
           <Card>
             <CardTitle icon={<GraduationCap size={20} className="text-brand" aria-hidden />}>
@@ -47,8 +64,8 @@ export function MentorChat({ subjects, pet, active, past }: Props) {
             </CardTitle>
             <p className="mb-4 text-sm text-muted">
               Escolha um tema da aula e explique com as suas palavras, escrevendo ou falando no microfone.{" "}
-              {pet.petName} vai fazer perguntas e, se algo ficar confuso, vocês descobrem juntos o jeito certo. Explique pelo menos {MENTOR_MIN_EXPLANATIONS} vezes
-              para ganhar +{MENTOR_XP} XP (uma vez por dia).
+              {pet.petName} vai fazer perguntas e, se algo ficar confuso, vocês descobrem juntos o jeito certo. Explique
+              pelo menos {MENTOR_MIN_EXPLANATIONS} vezes para ganhar +{MENTOR_XP} XP (uma vez por dia).
             </p>
             <form
               className="flex flex-wrap items-end gap-3 text-sm"
@@ -89,7 +106,7 @@ export function MentorChat({ subjects, pet, active, past }: Props) {
               </div>
               <div>
                 <h3 className="font-extrabold text-ink">O que {pet.petName} aprendeu sobre {ended.topic}</h3>
-                <p className="mt-1 text-ink">{ended.recap}</p>
+                <p className="mt-1 break-words text-ink">{tidySpeech(ended.recap)}</p>
                 <p className={`mt-2 text-sm font-bold ${ended.xp ? "text-success" : "text-muted"}`}>{ended.message}</p>
               </div>
             </div>
@@ -109,7 +126,7 @@ export function MentorChat({ subjects, pet, active, past }: Props) {
                 <div className="text-xs text-muted">
                   {p.subjectName} · {fmt.format(new Date(p.createdAt))}
                 </div>
-                {p.recap && <p className="mt-1 text-ink">{p.recap}</p>}
+                {p.recap && <p className="mt-1 break-words text-ink">{tidySpeech(p.recap)}</p>}
               </li>
             ))}
           </ul>
@@ -117,6 +134,25 @@ export function MentorChat({ subjects, pet, active, past }: Props) {
       </Card>
     </div>
   );
+}
+
+/** Lê a resposta do pet em streaming e vai entregando o texto acumulado. */
+async function streamPet(sessionId: string, payload: object, onText: (text: string) => void) {
+  const res = await fetch(`/api/mentor/${sessionId}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok || !res.body) throw new Error(await res.text());
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let text = "";
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    text += decoder.decode(value, { stream: true });
+    onText(text);
+  }
 }
 
 function ChatRoom({
@@ -134,52 +170,62 @@ function ChatRoom({
   const [error, setError] = useState<string | null>(null);
   const [viaAudio, setViaAudio] = useState(false);
   const [ending, startEnding] = useTransition();
+  const bottom = useRef<HTMLDivElement>(null);
+  const input = useRef<HTMLTextAreaElement>(null);
+  const opened = useRef(session.messages.length > 0);
   const speech = useSpeechToText((t) => {
     setText(t);
     setViaAudio(true);
   });
-  const bottom = useRef<HTMLDivElement>(null);
   const explanations = messages.filter((m) => m.role === "STUDENT").length;
 
   useEffect(() => {
     bottom.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
   }, [messages]);
 
-  const send = async () => {
-    const content = text.trim();
-    if (!content || streaming) return;
-    speech.stop();
-    const spoken = viaAudio;
-    setViaAudio(false);
-    setText("");
-    setError(null);
-    setStreaming(true);
+  /** Acrescenta uma fala do pet e a preenche conforme o streaming chega. */
+  const petSays = async (payload: object) => {
     const petId = `pet-${Date.now()}`;
-    setMessages((m) => [
-      ...m,
-      { id: `me-${Date.now()}`, role: "STUDENT", content, viaAudio: spoken },
-      { id: petId, role: "PET", content: "" },
-    ]);
+    setMessages((m) => [...m, { id: petId, role: "PET", content: "" }]);
+    setStreaming(true);
     try {
-      const res = await fetch(`/api/mentor/${session.id}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: content, viaAudio: spoken }),
-      });
-      if (!res.ok || !res.body) throw new Error(await res.text());
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      for (;;) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        const piece = decoder.decode(value, { stream: true });
-        setMessages((m) => m.map((msg) => (msg.id === petId ? { ...msg, content: msg.content + piece } : msg)));
-      }
+      await streamPet(session.id, payload, (t) =>
+        setMessages((m) => m.map((msg) => (msg.id === petId ? { ...msg, content: t } : msg))),
+      );
     } catch (e) {
       setMessages((m) => m.filter((msg) => msg.id !== petId));
       setError(e instanceof Error && e.message ? e.message : "Não consegui falar com o pet agora. Tente de novo.");
     } finally {
       setStreaming(false);
+    }
+  };
+
+  // Aula nova: o pet abre a conversa (uma vez só, mesmo com o efeito rodando duas vezes em desenvolvimento).
+  useEffect(() => {
+    if (opened.current) return;
+    opened.current = true;
+    petSays({ open: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const send = async () => {
+    const content = text.trim();
+    if (!content || streaming) return;
+    speech.cancel(); // descarta o que o ditado ainda entregaria e libera a caixa para a próxima explicação
+    const spoken = viaAudio;
+    setViaAudio(false);
+    setText("");
+    setError(null);
+    setMessages((m) => [...m, { id: `me-${Date.now()}`, role: "STUDENT", content, viaAudio: spoken }]);
+    await petSays({ text: content, viaAudio: spoken });
+  };
+
+  const toggleMic = () => {
+    if (speech.listening) {
+      speech.stop();
+      input.current?.focus();
+    } else {
+      speech.start(text);
     }
   };
 
@@ -197,21 +243,26 @@ function ChatRoom({
         <span className="text-sm font-semibold text-muted"> · {session.subjectName}</span>
       </CardTitle>
 
-      <div role="log" aria-live="polite" aria-label={`Conversa com ${pet.petName}`} className="max-h-[28rem] space-y-3 overflow-y-auto rounded-2xl bg-surface-2 p-3">
+      <div
+        role="log"
+        aria-live="polite"
+        aria-label={`Conversa com ${pet.petName}`}
+        className="max-h-[28rem] min-h-32 space-y-3 overflow-y-auto rounded-2xl bg-surface-2 p-3"
+      >
         {messages.map((m) =>
           m.role === "PET" ? (
             <div key={m.id} className="flex items-end gap-2">
               <div className="h-10 w-10 shrink-0 rounded-full bg-surface p-0.5 ring-2 ring-line">
                 <PetArt petType={pet.petType} mood={pet.mood === "TIRED" ? "NEUTRAL" : "HAPPY"} className="h-full w-full" />
               </div>
-              <div className="max-w-[80%] rounded-2xl rounded-bl-sm border border-line bg-surface px-3 py-2 text-ink">
+              <div className="max-w-[80%] break-words rounded-2xl rounded-bl-sm border border-line bg-surface px-3 py-2 text-ink">
                 <span className="sr-only">{pet.petName}: </span>
                 {m.content || <span className="text-muted">{pet.petName} está pensando…</span>}
               </div>
             </div>
           ) : (
             <div key={m.id} className="flex justify-end">
-              <div className="max-w-[80%] rounded-2xl rounded-br-sm bg-brand px-3 py-2 text-on-brand">
+              <div className="max-w-[80%] break-words rounded-2xl rounded-br-sm bg-brand px-3 py-2 text-on-brand">
                 <span className="sr-only">Você{m.viaAudio ? " (falado)" : ""}: </span>
                 {m.viaAudio && <Mic size={14} className="mr-1 inline align-[-2px] opacity-80" aria-hidden />}
                 {m.content}
@@ -223,15 +274,16 @@ function ChatRoom({
       </div>
 
       <form
-        className="mt-3 flex items-end gap-2"
+        className="mt-3 space-y-2"
         onSubmit={(e) => {
           e.preventDefault();
           send();
         }}
       >
-        <label className="flex-1">
+        <label className="block">
           <span className="sr-only">Sua explicação para {pet.petName}</span>
           <textarea
+            ref={input}
             value={text}
             onChange={(e) => {
               setText(e.target.value);
@@ -248,42 +300,56 @@ function ChatRoom({
             placeholder={
               speech.listening ? "Pode falar, estou ouvindo…" : `Escreva ou fale sua explicação para ${pet.petName}…`
             }
-            className="w-full resize-none rounded-xl border border-line bg-surface p-2 text-ink"
+            className={`w-full resize-none rounded-xl border bg-surface p-2 text-ink transition ${
+              speech.listening ? "border-brand ring-4 ring-brand/20" : "border-line"
+            }`}
           />
         </label>
-        {speech.supported && (
+        <div className="flex flex-wrap items-center gap-2">
+          {speech.supported && (
+            <button
+              type="button"
+              onClick={toggleMic}
+              disabled={streaming}
+              aria-pressed={speech.listening}
+              className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-extrabold transition disabled:opacity-50 ${
+                speech.listening
+                  ? "bg-brand text-on-brand shadow"
+                  : "border border-brand bg-surface text-brand hover:bg-brand-soft"
+              }`}
+            >
+              {speech.listening ? (
+                <>
+                  <Square size={14} className="fill-current" aria-hidden /> Parar
+                  <span aria-hidden className="flex h-4 items-end gap-0.5">
+                    <span className="eq-bar h-full w-1 rounded-full bg-current" />
+                    <span className="eq-bar h-full w-1 rounded-full bg-current [animation-delay:0.15s]" />
+                    <span className="eq-bar h-full w-1 rounded-full bg-current [animation-delay:0.3s]" />
+                  </span>
+                </>
+              ) : (
+                <>
+                  <Mic size={16} aria-hidden /> Falar
+                </>
+              )}
+            </button>
+          )}
           <button
-            type="button"
-            onClick={() => (speech.listening ? speech.stop() : speech.start(text))}
-            disabled={streaming}
-            aria-pressed={speech.listening}
-            aria-label={speech.listening ? "Parar de ouvir" : "Falar a explicação"}
-            title={speech.listening ? "Parar de ouvir" : "Falar a explicação"}
-            className={`rounded-full p-3 transition disabled:opacity-50 ${
-              speech.listening ? "animate-pulse bg-attention text-on-brand" : "border border-line bg-surface text-brand hover:bg-brand-soft"
-            }`}
+            type="submit"
+            disabled={streaming || !text.trim()}
+            className="ml-auto inline-flex items-center gap-2 rounded-full bg-brand px-4 py-2 text-sm font-extrabold text-on-brand disabled:opacity-50"
           >
-            {speech.listening ? <MicOff size={18} aria-hidden /> : <Mic size={18} aria-hidden />}
+            <Send size={16} aria-hidden /> Enviar
           </button>
-        )}
-        <button
-          type="submit"
-          disabled={streaming || !text.trim()}
-          aria-label="Enviar"
-          className="rounded-full bg-brand p-3 text-on-brand disabled:opacity-50"
-        >
-          <Send size={18} aria-hidden />
-        </button>
+        </div>
       </form>
-      {speech.listening && (
-        <p role="status" className="mt-2 text-sm font-bold text-attention">
-          Ouvindo… quando terminar, toque no microfone, confira o texto e envie.
-        </p>
-      )}
+      <p role="status" className="mt-1 min-h-5 text-sm font-bold text-brand">
+        {speech.listening ? "Ouvindo… fale sua explicação e toque em Parar quando terminar." : ""}
+      </p>
       {!speech.supported && (
-        <p className="mt-2 text-xs text-muted">Para falar em vez de escrever, use o Chrome, o Edge ou o Safari.</p>
+        <p className="text-xs text-muted">Para falar em vez de escrever, use o Chrome, o Edge ou o Safari.</p>
       )}
-      {(error || speech.error) && <p className="mt-2 text-sm font-bold text-attention">{error ?? speech.error}</p>}
+      {(error || speech.error) && <p className="text-sm font-bold text-attention">{error ?? speech.error}</p>}
 
       <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-sm">
         <span className="text-muted">
@@ -296,8 +362,8 @@ function ChatRoom({
           disabled={streaming || ending}
           onClick={() =>
             startEnding(async () => {
-              const r = await endMentorSession(session.id);
-              onEnded(r);
+              speech.cancel();
+              onEnded(await endMentorSession(session.id));
             })
           }
           className="rounded-full border border-line bg-surface px-4 py-2 font-bold text-ink hover:bg-brand-soft disabled:opacity-50"

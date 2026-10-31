@@ -6,15 +6,28 @@ import type { ChatCompletionMessageParam } from "openai/resources/chat/completio
 
 const MODEL = process.env.FEATHERLESS_MODEL || "Qwen/Qwen2.5-7B-Instruct";
 /**
- * A mentoria ("Ensinar o pet") usa um modelo maior: na avaliação (prompts/008) o 32B não errou conteúdo
- * e seguiu melhor o papel de aprendiz; o 7B chegou a ensinar uma regra errada de frações.
+ * A mentoria ("Ensinar o pet") usa o modelo que não errou conteúdo na avaliação
+ * (docs/avaliacao-modelo-mentoria.md): DeepSeek-V3. Se ele falhar ou estiver sem capacidade,
+ * a mesma chamada é refeita no Qwen 32B, que foi o segundo colocado.
  */
-export const MENTOR_MODEL = process.env.FEATHERLESS_MENTOR_MODEL || "Qwen/Qwen2.5-32B-Instruct";
+export const MENTOR_MODEL = process.env.FEATHERLESS_MENTOR_MODEL || "deepseek-ai/DeepSeek-V3-0324";
+export const MENTOR_FALLBACK_MODEL = process.env.FEATHERLESS_MENTOR_FALLBACK_MODEL || "Qwen/Qwen2.5-32B-Instruct";
 /** O 32B pode levar ~18 s quando está "frio"; a mentoria aquece o modelo ao começar a aula e espera mais. */
 export const MENTOR_TIMEOUT_MS = 30_000;
 const AI_TIMEOUT_MS = 15_000;
 
-type CallOptions = { temperature?: number; maxTokens?: number; model?: string; timeoutMs?: number };
+type CallOptions = {
+  temperature?: number;
+  maxTokens?: number;
+  model?: string;
+  /** Modelo reserva, usado se o principal falhar antes de responder. */
+  fallbackModel?: string;
+  timeoutMs?: number;
+};
+
+function errMsg(err: unknown) {
+  return err instanceof Error ? err.message : String(err);
+}
 
 let cached: OpenAI | null | undefined;
 function client() {
@@ -33,23 +46,22 @@ async function complete(
 ): Promise<string | null> {
   const ai = client();
   if (!ai) return null;
-  const t0 = Date.now();
-  try {
-    const res = await ai.chat.completions.create(
-      {
-        model: opts.model ?? MODEL,
-        temperature: opts.temperature ?? 0.6,
-        max_tokens: opts.maxTokens ?? 400,
-        messages,
-      },
-      { timeout: opts.timeoutMs ?? AI_TIMEOUT_MS },
-    );
-    console.info(`[ai] ${label}: ${Date.now() - t0} ms`);
-    return res.choices[0]?.message?.content?.trim() || null;
-  } catch (err) {
-    console.error(`[ai] ${label} falhou após ${Date.now() - t0} ms:`, err instanceof Error ? err.message : err);
-    return null;
+  const models = [opts.model ?? MODEL, ...(opts.fallbackModel ? [opts.fallbackModel] : [])];
+  for (const model of models) {
+    const t0 = Date.now();
+    try {
+      const res = await ai.chat.completions.create(
+        { model, temperature: opts.temperature ?? 0.6, max_tokens: opts.maxTokens ?? 400, messages },
+        { timeout: opts.timeoutMs ?? AI_TIMEOUT_MS },
+      );
+      console.info(`[ai] ${label} (${model}): ${Date.now() - t0} ms`);
+      const text = res.choices[0]?.message?.content?.trim();
+      if (text) return text;
+    } catch (err) {
+      console.error(`[ai] ${label} (${model}) falhou após ${Date.now() - t0} ms: ${errMsg(err)}`);
+    }
   }
+  return null;
 }
 
 /** Resposta em streaming: devolve os pedaços de texto conforme chegam, ou null se a IA não estiver disponível. */
@@ -60,33 +72,30 @@ export async function streamCompletion(
 ): Promise<AsyncIterable<string> | null> {
   const ai = client();
   if (!ai) return null;
-  const t0 = Date.now();
-  try {
-    const stream = await ai.chat.completions.create(
-      {
-        model: opts.model ?? MODEL,
-        temperature: opts.temperature ?? 0.7,
-        max_tokens: opts.maxTokens ?? 250,
-        messages,
-        stream: true,
-      },
-      { timeout: opts.timeoutMs ?? AI_TIMEOUT_MS },
-    );
-    return (async function* () {
-      try {
-        for await (const chunk of stream) {
-          const piece = chunk.choices[0]?.delta?.content;
-          if (piece) yield piece;
+  const models = [opts.model ?? MODEL, ...(opts.fallbackModel ? [opts.fallbackModel] : [])];
+  for (const model of models) {
+    const t0 = Date.now();
+    try {
+      const stream = await ai.chat.completions.create(
+        { model, temperature: opts.temperature ?? 0.7, max_tokens: opts.maxTokens ?? 250, messages, stream: true },
+        { timeout: opts.timeoutMs ?? AI_TIMEOUT_MS },
+      );
+      return (async function* () {
+        try {
+          for await (const chunk of stream) {
+            const piece = chunk.choices[0]?.delta?.content;
+            if (piece) yield piece;
+          }
+          console.info(`[ai] ${label} (${model}, stream): ${Date.now() - t0} ms`);
+        } catch (err) {
+          console.error(`[ai] ${label} (${model}, stream) interrompido após ${Date.now() - t0} ms: ${errMsg(err)}`);
         }
-        console.info(`[ai] ${label} (stream): ${Date.now() - t0} ms`);
-      } catch (err) {
-        console.error(`[ai] ${label} (stream) interrompido após ${Date.now() - t0} ms:`, err instanceof Error ? err.message : err);
-      }
-    })();
-  } catch (err) {
-    console.error(`[ai] ${label} (stream) falhou após ${Date.now() - t0} ms:`, err instanceof Error ? err.message : err);
-    return null;
+      })();
+    } catch (err) {
+      console.error(`[ai] ${label} (${model}, stream) falhou após ${Date.now() - t0} ms: ${errMsg(err)}`);
+    }
   }
+  return null;
 }
 
 /** Pedido mínimo, sem esperar a resposta, para o modelo sair do estado "frio" antes de ser usado. */

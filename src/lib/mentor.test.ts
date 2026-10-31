@@ -2,8 +2,11 @@ import { describe, expect, it } from "vitest";
 import {
   MENTOR_HISTORY,
   MENTOR_MIN_EXPLANATIONS,
+  createSpeechFilter,
   earnsMentorXp,
-  greeting,
+  tidySpeech,
+  fallbackOpener,
+  openerMessages,
   petReplyMessages,
   recapMessages,
   type MentorContext,
@@ -19,9 +22,16 @@ const ctx: MentorContext = {
 };
 
 describe("mentor do pet", () => {
-  it("o pet cumprimenta o aluno pelo primeiro nome e cita o tema", () => {
-    expect(greeting(ctx)).toContain("Lia");
-    expect(greeting(ctx)).toContain("Fotossíntese");
+  it("a abertura pede uma pergunta específica e o que o aluno sabe ou acha difícil", () => {
+    const [, instruction] = openerMessages(ctx);
+    expect(instruction.content).toMatch(/pergunta curiosa e específica sobre "Fotossíntese"/);
+    expect(instruction.content).toMatch(/o que já sabe ou qual parte/);
+  });
+
+  it("as aberturas prontas variam e citam aluno e tema", () => {
+    const all = new Set([0, 1, 2].map((v) => fallbackOpener(ctx, v)));
+    expect(all.size).toBe(3);
+    for (const line of all) expect(line).toMatch(/Lia.*Fotossíntese|Fotossíntese.*Lia/);
   });
 
   it("o prompt coloca o pet como aprendiz que corrige com gentileza", () => {
@@ -55,5 +65,19 @@ describe("mentor do pet", () => {
     expect(earnsMentorXp(MENTOR_MIN_EXPLANATIONS - 1, false)).toBe(false);
     expect(earnsMentorXp(MENTOR_MIN_EXPLANATIONS, false)).toBe(true);
     expect(earnsMentorXp(MENTOR_MIN_EXPLANATIONS + 2, true)).toBe(false);
+  });
+
+  it("respostas degeneradas ('!!!!!!…') são cortadas no streaming e no acabamento", () => {
+    const filter = createSpeechFilter();
+    const out = ["Vale revisar as formas pod", "em mud!!!!", "!!!!!!!!!!!!!!!!!!!!!!", " lixo"].map(filter).join("");
+    expect(out).toBe("Vale revisar as formas podem mud!!!!");
+    expect(tidySpeech("Vale a pena revisar mud!!!!!!!!!!!!!!!!!!!!")).toBe("Vale a pena revisar mud!");
+    expect(tidySpeech("Que legal!!! E agora?")).toBe("Que legal!!! E agora?");
+  });
+
+  it("o filtro tira ações entre asteriscos e emojis, mesmo quebrados entre pedaços do streaming", () => {
+    const filter = createSpeechFilter();
+    const out = ["Que legal! *bate as asi", "nhas* Você explicou bem 🌱☀️. *cur", "iosa* E agora?"].map(filter).join("");
+    expect(tidySpeech(out)).toBe("Que legal! Você explicou bem. E agora?");
   });
 });
