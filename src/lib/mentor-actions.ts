@@ -14,6 +14,8 @@ import {
   createSpeechFilter,
   earnsMentorXp,
   fallbackRecap,
+  notebookMessages,
+  parseNotebookNotes,
   recapMessages,
   tidySpeech,
 } from "./mentor";
@@ -56,16 +58,15 @@ export async function endMentorSession(sessionId: string): Promise<MentorEnd> {
   if (session.endedAt) return { ok: true, message: "Esta aula já terminou.", recap: session.recap ?? undefined };
 
   const explanations = history.filter((m) => m.role === "STUDENT").length;
-  const aiRecap =
+  // O resumo do pet e a página do caderno são gerados ao mesmo tempo.
+  const ai = { model: MENTOR_MODEL, fallbackModel: MENTOR_FALLBACK_MODEL, timeoutMs: MENTOR_TIMEOUT_MS };
+  const [aiRecap, aiNotes] =
     explanations > 0
-      ? await complete("recap do pet", recapMessages(ctx, history), {
-          temperature: 0.5,
-          maxTokens: 220,
-          model: MENTOR_MODEL,
-          fallbackModel: MENTOR_FALLBACK_MODEL,
-          timeoutMs: MENTOR_TIMEOUT_MS,
-        })
-      : null;
+      ? await Promise.all([
+          complete("recap do pet", recapMessages(ctx, history), { temperature: 0.5, maxTokens: 220, ...ai }),
+          complete("página do caderno", notebookMessages(ctx, history), { temperature: 0.3, maxTokens: 400, ...ai }),
+        ])
+      : [null, null];
   const recap = aiRecap
     ? tidySpeech(createSpeechFilter()(aiRecap))
     : explanations > 0
@@ -78,7 +79,15 @@ export async function endMentorSession(sessionId: string): Promise<MentorEnd> {
 
   const student = await db.user.findUniqueOrThrow({ where: { id: session.studentId } });
   await db.$transaction([
-    db.mentorSession.update({ where: { id: session.id }, data: { endedAt: now(), recap, rewarded: xp > 0 } }),
+    db.mentorSession.update({
+      where: { id: session.id },
+      data: {
+        endedAt: now(),
+        recap,
+        rewarded: xp > 0,
+        notes: explanations > 0 ? JSON.stringify(parseNotebookNotes(aiNotes, recap)) : null,
+      },
+    }),
     ...(xp > 0 && student.classroomId
       ? [
           db.pet.update({ where: { id: pet.id }, data: { xp: { increment: xp } } }),
@@ -107,4 +116,13 @@ export async function endMentorSession(sessionId: string): Promise<MentorEnd> {
           ? `Aula encerrada. Para ganhar XP, explique pelo menos ${MENTOR_MIN_EXPLANATIONS} vezes antes de terminar.`
           : "Aula encerrada. O XP de mentor já foi ganho hoje — volte amanhã!",
   };
+}
+
+/** Anotação do próprio aluno numa página do caderno. */
+export async function saveStudentNote(sessionId: string, text: string): Promise<{ ok: boolean; message: string }> {
+  const loaded = await loadOwnSession(sessionId);
+  if (!loaded) return { ok: false, message: "Página não encontrada." };
+  await db.mentorSession.update({ where: { id: sessionId }, data: { studentNote: text.trim().slice(0, 600) || null } });
+  revalidatePath("/student");
+  return { ok: true, message: "Anotação guardada no caderno!" };
 }

@@ -4,6 +4,7 @@ import { getActingUser } from "@/lib/session";
 import { classroomSchedule } from "@/lib/schedule-data";
 import { feedbackDay } from "@/lib/feedback-data";
 import { firstName } from "@/lib/game";
+import type { NotebookNotes } from "@/lib/mentor";
 import { addDays, currentOrNextSchoolDay, weekdayOf } from "@/lib/calendar";
 import { SchoolCalendar } from "@/components/shared/SchoolCalendar";
 import { EventList } from "@/components/shared/EventList";
@@ -35,14 +36,26 @@ export default async function StudentPage() {
     classroomSchedule(classroom.id),
     feedbackDay(student.id),
     db.classSubject.findMany({ where: { classroomId: classroom.id }, include: { subject: true }, orderBy: { subject: { name: "asc" } } }),
+    // Aulas com o pet: a aberta (com as mensagens) e as terminadas, que são as páginas do caderno.
     db.mentorSession.findMany({
       where: { studentId: student.id },
       orderBy: { createdAt: "desc" },
-      take: 6,
-      include: { messages: { orderBy: { createdAt: "asc" } } },
+      take: 200,
+      include: { messages: { where: { session: { endedAt: null } }, orderBy: { createdAt: "asc" } } },
     }),
   ]);
   const activeMentor = mentorSessions.find((s) => !s.endedAt) ?? null;
+  const notebookPages = mentorSessions
+    .filter((s) => s.endedAt)
+    .map((s) => ({
+      id: s.id,
+      subjectName: s.subjectName,
+      topic: s.topic,
+      createdAt: s.createdAt.toISOString(),
+      recap: s.recap,
+      notes: parseNotebookNotesSafe(s.notes),
+      studentNote: s.studentNote,
+    }));
   const pending = feedback.pending;
 
   // Lembrete dos cadernos: aulas de hoje ou, sem aula hoje, do próximo dia letivo.
@@ -161,16 +174,8 @@ export default async function StudentPage() {
                     })),
                   }
                 }
-                past={mentorSessions
-                  .filter((s) => s.endedAt)
-                  .slice(0, 5)
-                  .map((s) => ({
-                    id: s.id,
-                    subjectName: s.subjectName,
-                    topic: s.topic,
-                    recap: s.recap,
-                    createdAt: s.createdAt.toISOString(),
-                  }))}
+                pages={notebookPages}
+                studentFirstName={firstName(student.name)}
               />
             ),
           },
@@ -223,4 +228,14 @@ export default async function StudentPage() {
       />
     </div>
   );
+}
+
+/** Página do caderno salva (JSON); aulas antigas, de antes do caderno, não têm anotações. */
+function parseNotebookNotesSafe(raw: string | null): NotebookNotes | null {
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw) as NotebookNotes;
+  } catch {
+    return null;
+  }
 }

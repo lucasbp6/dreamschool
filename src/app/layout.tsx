@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
-import { Atkinson_Hyperlegible, Nunito } from "next/font/google";
+import { Atkinson_Hyperlegible, Nunito, Patrick_Hand } from "next/font/google";
 import "./globals.css";
 import { AccessibilityBar } from "@/components/shared/AccessibilityBar";
 import { RoleSwitcher } from "@/components/shared/RoleSwitcher";
@@ -11,6 +11,8 @@ import type { Role } from "@/lib/game";
 
 const nunito = Nunito({ variable: "--font-nunito", subsets: ["latin"] });
 const atkinson = Atkinson_Hyperlegible({ variable: "--font-atkinson", subsets: ["latin"], weight: ["400", "700"] });
+// Letra de mão do caderno de estudos com o pet.
+const hand = Patrick_Hand({ variable: "--font-patrick", subsets: ["latin", "latin-ext"], weight: "400" });
 
 export const metadata: Metadata = {
   title: "Escola dos Sonhos",
@@ -31,7 +33,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
       <head>
         <script dangerouslySetInnerHTML={{ __html: a11yScript }} />
       </head>
-      <body className={`${nunito.variable} ${atkinson.variable} antialiased min-h-screen`}>
+      <body className={`${nunito.variable} ${atkinson.variable} ${hand.variable} antialiased min-h-screen`}>
         <header className="sticky top-0 z-20 border-b border-line bg-surface/95 backdrop-blur">
           <AccessibilityBar />
           <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3">

@@ -165,3 +165,49 @@ export function tidySpeech(text: string) {
     .replace(/ +([,.!?…])/g, "$1")
     .trim();
 }
+
+// ---------- Caderno do pet ----------
+// Cada aula terminada vira uma página do caderno de estudos do aluno com o pet.
+
+export type NotebookNotes = { learned: string[]; careful: string[]; review: string };
+
+/** Mensagens para escrever a página do caderno: só fatos corretos, corrigindo o que a conversa errou. */
+export function notebookMessages(ctx: MentorContext, history: MentorTurn[]): ChatCompletionMessageParam[] {
+  const mentor = firstName(ctx.studentName);
+  const transcript = history
+    .slice(-20)
+    .map((m) => `${m.role === "STUDENT" ? mentor : ctx.petName}: ${m.content}`)
+    .join("\n");
+  return [
+    {
+      role: "system",
+      content:
+        `Você escreve a página do caderno de estudos de ${mentor} e do pet ${ctx.petName} sobre "${ctx.topic}" ` +
+        `(${ctx.subjectName}), para uma criança de 8 a 11 anos revisar. Use só informações corretas: se a conversa ` +
+        `tiver algo errado, escreva a versão certa. Frases curtas e simples, em português do Brasil, sem emojis. ` +
+        `Responda SOMENTE com JSON no formato {"aprendemos": ["..."], "cuidado": ["..."], "revisar": "..."}: ` +
+        `"aprendemos" com 2 a 4 fatos principais do tema; "cuidado" com até 2 frases sobre confusões que ` +
+        `apareceram na conversa e o jeito certo (lista vazia se não houve); "revisar" com uma pergunta curta ` +
+        `para testar o que aprenderam.`,
+    },
+    { role: "user", content: `Conversa da aula:\n${transcript}` },
+  ];
+}
+
+const clip = (s: unknown, max: number) => (typeof s === "string" ? tidySpeech(createSpeechFilter()(s)).slice(0, max) : "");
+
+/** Lê o JSON da página (tolerante a texto em volta); sem JSON válido, monta a página a partir do resumo do pet. */
+export function parseNotebookNotes(raw: string | null, recapFallback: string): NotebookNotes {
+  try {
+    const json = raw?.match(/\{[\s\S]*\}/)?.[0];
+    if (json) {
+      const data = JSON.parse(json) as { aprendemos?: unknown; cuidado?: unknown; revisar?: unknown };
+      const list = (v: unknown, n: number) =>
+        (Array.isArray(v) ? v : []).map((x) => clip(x, 220)).filter(Boolean).slice(0, n);
+      const learned = list(data.aprendemos, 4);
+      if (learned.length) return { learned, careful: list(data.cuidado, 2), review: clip(data.revisar, 200) };
+    }
+  } catch {}
+  const sentences = recapFallback.split(/(?<=[.!?…])\s+/).filter((s) => s.trim().length > 3);
+  return { learned: sentences.slice(0, 3), careful: [], review: "" };
+}

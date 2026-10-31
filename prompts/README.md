@@ -17,3 +17,4 @@ Cada prompt enviado durante o desenvolvimento fica em um arquivo numerado, com o
 | 011 | [011-avaliacao-por-materia.md](011-avaliacao-por-materia.md) | Avaliação por matéria, prazo de um dia e avaliações anônimas |
 | 012 | [012-scroll-mensagens-cadernos-cadastros.md](012-scroll-mensagens-cadernos-cadastros.md) | Rolagem, mensagens dos pais, lembrete dos cadernos e cadastros em abas |
 | 013 | [013-scroll-e-voz-do-pet.md](013-scroll-e-voz-do-pet.md) | Rolagem na chamada e nos recados; voz do pet |
+| 014 | [014-caderno-do-pet.md](014-caderno-do-pet.md) | Sem voz do pet; caderno de estudos do aluno com o pet |

@@ -1,29 +1,29 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
-import { GraduationCap, Mic, Send, Sparkles, Square, Volume2, VolumeX } from "lucide-react";
+import { GraduationCap, Mic, Send, Sparkles, Square } from "lucide-react";
 import { endMentorSession, startMentorSession, type MentorEnd } from "@/lib/mentor-actions";
 import { MENTOR_MAX_CHARS, MENTOR_MIN_EXPLANATIONS, MENTOR_XP, tidySpeech } from "@/lib/mentor";
 import { PetArt } from "@/components/shared/PetArt";
 import { Card, CardTitle } from "@/components/shared/ui";
 import { useSpeechToText } from "@/components/shared/useSpeechToText";
-import { usePetVoice, type PetVoice } from "@/components/shared/usePetVoice";
+import { NotebookCover, PetNotebook, type NotebookPage } from "./PetNotebook";
 
 type Message = { id: string; role: "STUDENT" | "PET"; content: string; viaAudio?: boolean };
 type Session = { id: string; subjectName: string; topic: string; messages: Message[] };
-type Past = { id: string; subjectName: string; topic: string; recap: string | null; createdAt: string };
 
 type Props = {
   subjects: string[];
   pet: { petType: string; petName: string; mood: string };
   active: Session | null;
-  past: Past[];
+  /** Páginas do caderno (aulas terminadas), da mais nova para a mais antiga. */
+  pages: NotebookPage[];
+  studentFirstName: string;
 };
 
 const control = "rounded-xl border border-line bg-surface px-3 py-2 font-semibold text-ink";
-const fmt = new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "short" });
 
-export function MentorChat({ subjects, pet, active, past }: Props) {
+export function MentorChat({ subjects, pet, active, pages, studentFirstName }: Props) {
   // A aula aberta vem do servidor, mas a tela também a abre na hora com o retorno da ação,
   // sem depender de a página ser revalidada.
   const [current, setCurrent] = useState<Session | null>(active);
@@ -33,32 +33,33 @@ export function MentorChat({ subjects, pet, active, past }: Props) {
     setCurrent(active);
   }
   const [ended, setEnded] = useState<(MentorEnd & { topic: string }) | null>(null);
-  const voice = usePetVoice(pet.petType);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
-  const start = (fd: FormData) =>
+  const start = (subjectName: string, topic: string) =>
     startTransition(async () => {
       setError(null);
       setEnded(null);
-      const r = await startMentorSession(String(fd.get("subject") ?? ""), String(fd.get("topic") ?? ""));
-      if (r.ok) setCurrent({ ...r.session, messages: [] });
-      else setError(r.message);
+      const r = await startMentorSession(subjectName, topic);
+      if (r.ok) {
+        setCurrent({ ...r.session, messages: [] });
+        // Rola até a conversa depois que ela aparece na tela.
+        setTimeout(() => document.getElementById("aula-com-pet")?.scrollIntoView({ behavior: "smooth", block: "start" }), 100);
+      } else setError(r.message);
     });
 
   return (
-    <div className="grid gap-5 lg:grid-cols-3">
+    <div className="space-y-5">
+    <div id="aula-com-pet" className="grid scroll-mt-28 gap-5 lg:grid-cols-3">
       <div className="space-y-4 lg:col-span-2">
         {current ? (
           <ChatRoom
             key={current.id}
             session={current}
             pet={pet}
-            voice={voice}
             onEnded={(r) => {
               setEnded({ ...r, topic: current.topic });
               setCurrent(null);
-              if (r.recap) voice.speak(tidySpeech(r.recap));
             }}
           />
         ) : (
@@ -75,7 +76,8 @@ export function MentorChat({ subjects, pet, active, past }: Props) {
               className="flex flex-wrap items-end gap-3 text-sm"
               onSubmit={(e) => {
                 e.preventDefault();
-                start(new FormData(e.currentTarget));
+                const fd = new FormData(e.currentTarget);
+                start(String(fd.get("subject") ?? ""), String(fd.get("topic") ?? ""));
               }}
             >
               <label className="flex flex-col gap-1 font-bold text-muted">
@@ -109,38 +111,27 @@ export function MentorChat({ subjects, pet, active, past }: Props) {
                 <PetArt petType={pet.petType} mood="HAPPY" className="h-full w-full" />
               </div>
               <div>
-                <h3 className="flex items-center gap-2 font-extrabold text-ink">
-                  O que {pet.petName} aprendeu sobre {ended.topic}
-                  {voice.supported && (
-                    <ListenButton onClick={() => voice.speak(tidySpeech(ended.recap!), true)} petName={pet.petName} />
-                  )}
-                </h3>
+                <h3 className="font-extrabold text-ink">O que {pet.petName} aprendeu sobre {ended.topic}</h3>
                 <p className="mt-1 break-words text-ink">{tidySpeech(ended.recap)}</p>
                 <p className={`mt-2 text-sm font-bold ${ended.xp ? "text-success" : "text-muted"}`}>{ended.message}</p>
+                <a href="#caderno" className="mt-1 inline-block text-sm font-bold text-brand underline">
+                  Nova página no caderno! Ver a página
+                </a>
               </div>
             </div>
           </Card>
         )}
       </div>
 
-      <Card>
-        <CardTitle>Aulas anteriores</CardTitle>
-        {past.length === 0 ? (
-          <p className="text-sm text-muted">Você ainda não deu nenhuma aula para {pet.petName}.</p>
-        ) : (
-          <ul tabIndex={0} aria-label="Aulas anteriores (com rolagem)" className="max-h-[30rem] space-y-3 overflow-y-auto pr-1 text-sm">
-            {past.map((p) => (
-              <li key={p.id} className="rounded-2xl border border-line bg-surface-2 p-3">
-                <div className="font-extrabold text-ink">{p.topic}</div>
-                <div className="text-xs text-muted">
-                  {p.subjectName} · {fmt.format(new Date(p.createdAt))}
-                </div>
-                {p.recap && <p className="mt-1 break-words text-ink">{tidySpeech(p.recap)}</p>}
-              </li>
-            ))}
-          </ul>
-        )}
-      </Card>
+      <NotebookCover studentFirstName={studentFirstName} pet={pet} pages={pages} />
+    </div>
+
+    <PetNotebook
+      studentFirstName={studentFirstName}
+      pet={pet}
+      pages={pages}
+      onReview={(subjectName, topic) => start(subjectName, topic)}
+    />
     </div>
   );
 }
@@ -164,30 +155,13 @@ async function streamPet(sessionId: string, payload: object, onText: (text: stri
   }
 }
 
-/** Botão pequeno de "ouvir de novo" a fala do pet. */
-function ListenButton({ onClick, petName }: { onClick: () => void; petName: string }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-label={`Ouvir ${petName} de novo`}
-      title="Ouvir de novo"
-      className="shrink-0 rounded-full p-1 text-brand hover:bg-brand-soft"
-    >
-      <Volume2 size={16} aria-hidden />
-    </button>
-  );
-}
-
 function ChatRoom({
   session,
   pet,
-  voice,
   onEnded,
 }: {
   session: Session;
   pet: Props["pet"];
-  voice: PetVoice;
   onEnded: (r: MentorEnd) => void;
 }) {
   const [messages, setMessages] = useState<Message[]>(session.messages);
@@ -214,13 +188,10 @@ function ChatRoom({
     const petId = `pet-${Date.now()}`;
     setMessages((m) => [...m, { id: petId, role: "PET", content: "" }]);
     setStreaming(true);
-    const speaker = voice.stream(); // o pet fala cada frase assim que ela chega
     try {
-      await streamPet(session.id, payload, (t) => {
-        speaker.feed(t);
-        setMessages((m) => m.map((msg) => (msg.id === petId ? { ...msg, content: t } : msg)));
-      });
-      speaker.flush();
+      await streamPet(session.id, payload, (t) =>
+        setMessages((m) => m.map((msg) => (msg.id === petId ? { ...msg, content: t } : msg))),
+      );
     } catch (e) {
       setMessages((m) => m.filter((msg) => msg.id !== petId));
       setError(e instanceof Error && e.message ? e.message : "Não consegui falar com o pet agora. Tente de novo.");
@@ -241,7 +212,6 @@ function ChatRoom({
     const content = text.trim();
     if (!content || streaming) return;
     speech.cancel(); // descarta o que o ditado ainda entregaria e libera a caixa para a próxima explicação
-    voice.stop();
     const spoken = viaAudio;
     setViaAudio(false);
     setText("");
@@ -255,7 +225,6 @@ function ChatRoom({
       speech.stop();
       input.current?.focus();
     } else {
-      voice.stop(); // o microfone não pode ouvir a voz do pet
       speech.start(text);
     }
   };
@@ -265,30 +234,8 @@ function ChatRoom({
       <CardTitle
         icon={<GraduationCap size={20} className="text-brand" aria-hidden />}
         aside={
-          <span className="flex items-center gap-2">
-            {voice.supported && (
-              <button
-                type="button"
-                onClick={voice.toggle}
-                aria-pressed={voice.enabled}
-                className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-bold transition ${
-                  voice.enabled ? "border-brand bg-brand-soft text-brand" : "border-line bg-surface text-muted"
-                }`}
-              >
-                {voice.enabled ? <Volume2 size={14} aria-hidden /> : <VolumeX size={14} aria-hidden />}
-                {voice.enabled ? "Voz ligada" : "Voz desligada"}
-                {voice.speaking && (
-                  <span aria-hidden className="ml-0.5 flex h-3 items-end gap-0.5">
-                    <span className="eq-bar h-full w-0.5 rounded-full bg-current" />
-                    <span className="eq-bar h-full w-0.5 rounded-full bg-current [animation-delay:0.15s]" />
-                    <span className="eq-bar h-full w-0.5 rounded-full bg-current [animation-delay:0.3s]" />
-                  </span>
-                )}
-              </button>
-            )}
-            <span className="text-xs font-bold text-muted tabular-nums">
-              {Math.min(explanations, MENTOR_MIN_EXPLANATIONS)}/{MENTOR_MIN_EXPLANATIONS} explicações
-            </span>
+          <span className="text-xs font-bold text-muted tabular-nums">
+            {Math.min(explanations, MENTOR_MIN_EXPLANATIONS)}/{MENTOR_MIN_EXPLANATIONS} explicações
           </span>
         }
       >
@@ -312,9 +259,6 @@ function ChatRoom({
                 <span className="sr-only">{pet.petName}: </span>
                 {m.content || <span className="text-muted">{pet.petName} está pensando…</span>}
               </div>
-              {voice.supported && m.content && !(streaming && m.id === messages.at(-1)?.id) && (
-                <ListenButton onClick={() => voice.speak(m.content, true)} petName={pet.petName} />
-              )}
             </div>
           ) : (
             <div key={m.id} className="flex justify-end">

@@ -142,6 +142,25 @@ body {
 .cloud-slow { animation: cloud-drift 65s linear infinite; }
 .twinkle { animation: twinkle 2.4s ease-in-out infinite; }
 
+/* Caderno de estudos com o pet: papel pautado com margem e espiral. */
+.notebook-paper {
+  background-color: var(--surface);
+  background-image: repeating-linear-gradient(to bottom, transparent 0 calc(2rem - 1px), var(--line) calc(2rem - 1px) 2rem);
+  background-position: 0 0.4rem;
+  line-height: 2rem;
+  border-left: 3px solid var(--cloud-deep);
+}
+/* .notebook-font só troca a letra (títulos mantêm o tamanho); .notebook-hand também ajusta o tamanho do texto. */
+.notebook-font, .notebook-hand { font-family: var(--font-patrick), "Comic Sans MS", cursive; }
+.notebook-hand { font-size: 1.15rem; }
+html.dyslexic .notebook-font, html.dyslexic .notebook-hand { font-family: var(--font-readable); }
+html.dyslexic .notebook-hand { font-size: 1rem; }
+.notebook-spiral {
+  background-image: radial-gradient(circle at center, var(--bg) 0 35%, var(--muted) 36% 48%, transparent 49%);
+  background-size: 1.4rem 1.4rem;
+  background-repeat: repeat-y;
+}
+
 /* Barrinhas de som enquanto o ditado está ouvindo. */
 @keyframes eq {
   0%, 100% { transform: scaleY(0.35); }

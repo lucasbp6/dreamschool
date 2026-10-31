@@ -6,7 +6,9 @@ import {
   earnsMentorXp,
   tidySpeech,
   fallbackOpener,
+  notebookMessages,
   openerMessages,
+  parseNotebookNotes,
   petReplyMessages,
   recapMessages,
   type MentorContext,
@@ -79,5 +81,25 @@ describe("mentor do pet", () => {
     const filter = createSpeechFilter();
     const out = ["Que legal! *bate as asi", "nhas* Você explicou bem 🌱☀️. *cur", "iosa* E agora?"].map(filter).join("");
     expect(tidySpeech(out)).toBe("Que legal! Você explicou bem. E agora?");
+  });
+
+  it("a página do caderno pede só fatos corretos em JSON", () => {
+    const [system] = notebookMessages(ctx, [{ role: "STUDENT", content: "As plantas comem terra." }]);
+    expect(system.content).toMatch(/só informações corretas/);
+    expect(system.content).toMatch(/"aprendemos"/);
+  });
+
+  it("lê a página mesmo com texto em volta do JSON e limita os itens", () => {
+    const raw = 'Aqui está: {"aprendemos": ["A planta faz o próprio alimento.", "Usa luz, água e gás carbônico.", "Solta oxigênio.", "As folhas são verdes.", "Extra"], "cuidado": ["A planta não come terra: a raiz tira água e sais."], "revisar": "O que a planta solta no ar?"} fim';
+    const notes = parseNotebookNotes(raw, "");
+    expect(notes.learned).toHaveLength(4);
+    expect(notes.careful).toEqual(["A planta não come terra: a raiz tira água e sais."]);
+    expect(notes.review).toBe("O que a planta solta no ar?");
+  });
+
+  it("sem JSON válido, a página usa o resumo do pet", () => {
+    const notes = parseNotebookNotes("não consegui", "Aprendi que a planta faz comida. Ela usa a luz do sol! Obrigado.");
+    expect(notes.learned).toEqual(["Aprendi que a planta faz comida.", "Ela usa a luz do sol!", "Obrigado."]);
+    expect(notes.careful).toEqual([]);
   });
 });
