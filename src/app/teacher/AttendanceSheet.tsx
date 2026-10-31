@@ -93,7 +93,11 @@ export function AttendanceSheet({ subjects, students, records, today }: Props) {
         {!hasLesson && <Badge tone="attention">Não há aula de {subject?.name} neste dia na grade</Badge>}
       </div>
 
-      <ul className="divide-y divide-line rounded-2xl border border-line bg-surface-2">
+      <ul
+        tabIndex={0}
+        aria-label="Lista de chamada (com rolagem)"
+        className="max-h-[28rem] divide-y divide-line overflow-y-auto rounded-2xl border border-line bg-surface-2"
+      >
         {students.map((s) => {
           const history = records.filter((r) => r.classSubjectId === subjectId && r.studentId === s.id).map((r) => r.status);
           const rate = attendanceRate(history);

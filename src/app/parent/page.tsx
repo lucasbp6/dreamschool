@@ -154,7 +154,7 @@ export default async function ParentPage({ searchParams }: { searchParams: Promi
                 {child.parentNotes.length === 0 ? (
                   <p className="text-sm text-muted">Nenhum recado ainda.</p>
                 ) : (
-                  <ul className="space-y-3">
+                  <ul tabIndex={0} aria-label="Recados da escola (com rolagem)" className="max-h-[30rem] space-y-3 overflow-y-auto pr-1">
                     {child.parentNotes.map((n) => (
                       <li key={n.id} className="rounded-2xl border border-line bg-surface-2 p-4">
                         <div className="text-xs font-bold text-muted">{fmt.format(n.createdAt)}</div>

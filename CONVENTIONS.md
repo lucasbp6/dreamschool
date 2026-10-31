@@ -59,6 +59,7 @@ Plataforma web gamificada para o ensino básico conectando Alunos, Professores, 
 - Ao **terminar a aula**, o pet conta o que aprendeu (corrigindo o que ficou errado) e dá uma dica de revisão. Com pelo menos **3 explicações**, a aula vale **+5 XP** para o pet, uma vez por dia (evento "Mentoria").
 - As conversas ficam salvas (`MentorSession`, `MentorMessage`); as respostas do pet chegam em streaming pela rota `/api/mentor/[sessionId]`. Prompts e regras em `src/lib/mentor.ts`.
 - **Explicação por voz ou texto:** o botão "Falar" (vira "Parar" enquanto ouve) usa o ditado do navegador (Web Speech API, pt-BR; Chrome, Edge e Safari). O texto aparece enquanto o aluno fala e ele pode revisar antes de enviar; mensagens faladas ficam marcadas (`viaAudio`) e o pet ignora erros de transcrição. No Chrome/Edge o áudio é transcrito por um serviço online do navegador.
+- **Voz do pet:** o pet fala a abertura, as respostas e o resumo final com a síntese de voz do navegador (pt-BR), frase por frase enquanto o texto chega, com timbre por espécie (`src/components/shared/usePetVoice.ts`). Botão "Voz ligada/desligada" (preferência guardada no navegador), "ouvir de novo" em cada fala; a voz para quando o aluno começa a falar no microfone.
 - **Modelo:** a mentoria usa `deepseek-ai/DeepSeek-V3-0324` (`FEATHERLESS_MENTOR_MODEL`), com reserva automática `Qwen/Qwen2.5-32B-Instruct` (`FEATHERLESS_MENTOR_FALLBACK_MODEL`), escolhidos na avaliação de `docs/avaliacao-modelo-mentoria.md`; o restante segue no 7B. O modelo é aquecido quando a aula começa e tem limite de 30 s. A fala do pet passa por um filtro que remove ações entre asteriscos e emojis e corta respostas degeneradas ("!!!!!!…").
 
 ### H. Chamadas de IA
@@ -68,7 +69,7 @@ Plataforma web gamificada para o ensino básico conectando Alunos, Professores, 
 - **Mensagens:** o responsável escreve para os professores dos filhos ou para a gestão (aba **Mensagens** dos Pais), opcionalmente sobre um filho; professor (aba **Mensagens**) e gestor (Gestor → Mensagens) respondem. Conversas e mensagens em `Conversation`/`ConversationMessage`; a conversa só conta como lida quando a pessoa a abre (o número de não lidas aparece na aba).
 - **Lembrete dos cadernos:** na aba **Meu mundo**, o pet lembra o aluno de conferir os cadernos das aulas de hoje (ou do próximo dia letivo), com uma lista marcável guardada no navegador.
 - **Cadastros do gestor em abas:** Turmas → Professores → Matérias → Alunos, cada uma com o formulário ao lado da lista.
-- **Caixas longas têm rolagem** (ex.: Aulas anteriores, Últimos registros, listas de cadastro, conversas), com foco pelo teclado.
+- **Caixas longas têm rolagem** (ex.: Aulas anteriores, Últimos registros, Chamada, Recados dos pais, listas de cadastro, conversas), com foco pelo teclado.
 
 ## 2. Stack Tecnológica (MVP Hackathon)
 - **Framework:** Next.js 14+ (App Router) com TypeScript + Tailwind CSS + Lucide Icons.
