@@ -1,4 +1,4 @@
-import { Flame, Sparkles, Star, Sunrise } from "lucide-react";
+import { Flame, GraduationCap, Sparkles, Star, Sunrise } from "lucide-react";
 
 type EventItem = {
   id: string;
@@ -16,6 +16,7 @@ const STYLE = {
   ATTENTION: { Icon: Sunrise, tone: "bg-attention-soft text-attention", title: "Ponto de Atenção" },
   RECOVERY: { Icon: Sparkles, tone: "bg-brand-soft text-brand", title: "Superação" },
   STREAK: { Icon: Flame, tone: "bg-brand-soft text-brand", title: "Ofensiva" },
+  MENTOR: { Icon: GraduationCap, tone: "bg-sky-soft text-sky", title: "Mentoria" },
 } as const;
 
 const fmt = new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });

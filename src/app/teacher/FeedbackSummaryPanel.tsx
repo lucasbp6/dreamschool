@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { Sparkles } from "lucide-react";
 import { generateFeedbackSummary } from "@/lib/actions";
 import { Stat } from "@/components/shared/ui";
+import { useElapsed } from "@/components/shared/useElapsed";
 
 type Props = {
   classroomId: string;
@@ -16,11 +17,18 @@ type Props = {
 export function FeedbackSummaryPanel({ classroomId, teacherId, count, avgStars, latest }: Props) {
   const [pending, startTransition] = useTransition();
   const [message, setMessage] = useState<string | null>(null);
+  const elapsed = useElapsed(pending);
 
   const generate = () =>
     startTransition(async () => {
       const res = await generateFeedbackSummary(classroomId, teacherId);
-      setMessage(res.ok ? (res.usedAi ? null : "IA indisponível: mostrando um resumo simples.") : res.message);
+      setMessage(
+        res.ok
+          ? res.usedAi
+            ? null
+            : "A IA demorou demais ou está indisponível, então salvamos um resumo simples. Tente de novo em instantes."
+          : res.message,
+      );
     });
 
   return (
@@ -38,7 +46,7 @@ export function FeedbackSummaryPanel({ classroomId, teacherId, count, avgStars, 
         disabled={pending || count === 0}
         className="inline-flex items-center gap-2 rounded-full bg-brand px-4 py-2 font-bold text-on-brand disabled:opacity-50"
       >
-        <Sparkles size={16} aria-hidden /> {pending ? "Gerando resumo…" : "Gerar resumo com IA"}
+        <Sparkles size={16} aria-hidden /> {pending ? `Gerando resumo… ${elapsed}s` : "Gerar resumo com IA"}
       </button>
       {message && <p className="text-attention">{message}</p>}
       {latest && (

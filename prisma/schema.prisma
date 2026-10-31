@@ -55,6 +55,7 @@ model User {
   feedbackSummaries FeedbackSummary[]
   attendances       Attendance[]
   grades            Grade[]
+  mentorSessions    MentorSession[]
 }
 
 model Pet {
@@ -191,4 +192,29 @@ model Grade {
   student      User       @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
   @@unique([assessmentId, studentId])
+}
+
+// "Ensinar o pet": o aluno explica um tema da aula e o pet, curioso, tira dúvidas e corrige erros com gentileza.
+model MentorSession {
+  id          String          @id @default(cuid())
+  subjectName String
+  topic       String
+  day         String // YYYY-MM-DD
+  recap       String? // o que o pet aprendeu (gerado ao terminar)
+  rewarded    Boolean         @default(false)
+  createdAt   DateTime        @default(now())
+  endedAt     DateTime?
+  studentId   String
+  student     User            @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  messages    MentorMessage[]
+}
+
+model MentorMessage {
+  id        String        @id @default(cuid())
+  role      String // STUDENT | PET
+  content   String
+  usedAi    Boolean       @default(true)
+  createdAt DateTime      @default(now())
+  sessionId String
+  session   MentorSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 }

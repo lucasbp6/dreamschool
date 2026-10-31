@@ -1,30 +1,75 @@
 // IA integrada via Featherless (API compatível com OpenAI).
-// Sem FEATHERLESS_API_KEY ou em caso de erro, devolve um texto de fallback para a demo não quebrar.
+// Sem FEATHERLESS_API_KEY, em caso de erro ou de demora acima de AI_TIMEOUT_MS, as funções devolvem
+// um texto de fallback para a demo não travar. O SDK, por padrão, esperaria até 10 minutos.
 import OpenAI from "openai";
+import type { ChatCompletionMessageParam } from "openai/resources/chat/completions";
 
-const MODEL = "Qwen/Qwen2.5-7B-Instruct";
+const MODEL = process.env.FEATHERLESS_MODEL || "Qwen/Qwen2.5-7B-Instruct";
+const AI_TIMEOUT_MS = 15_000;
 
+let cached: OpenAI | null | undefined;
 function client() {
+  if (cached !== undefined) return cached;
   const apiKey = process.env.FEATHERLESS_API_KEY;
-  return apiKey ? new OpenAI({ apiKey, baseURL: "https://api.featherless.ai/v1" }) : null;
+  cached = apiKey
+    ? new OpenAI({ apiKey, baseURL: "https://api.featherless.ai/v1", timeout: AI_TIMEOUT_MS, maxRetries: 1 })
+    : null;
+  return cached;
 }
 
-async function complete(system: string, user: string): Promise<string | null> {
+async function complete(
+  label: string,
+  messages: ChatCompletionMessageParam[],
+  opts: { temperature?: number; maxTokens?: number } = {},
+): Promise<string | null> {
   const ai = client();
   if (!ai) return null;
+  const t0 = Date.now();
   try {
     const res = await ai.chat.completions.create({
       model: MODEL,
-      temperature: 0.6,
-      max_tokens: 400,
-      messages: [
-        { role: "system", content: system },
-        { role: "user", content: user },
-      ],
+      temperature: opts.temperature ?? 0.6,
+      max_tokens: opts.maxTokens ?? 400,
+      messages,
     });
+    console.info(`[ai] ${label}: ${Date.now() - t0} ms`);
     return res.choices[0]?.message?.content?.trim() || null;
   } catch (err) {
-    console.error("[ai] falha na Featherless:", err);
+    console.error(`[ai] ${label} falhou após ${Date.now() - t0} ms:`, err instanceof Error ? err.message : err);
+    return null;
+  }
+}
+
+/** Resposta em streaming: devolve os pedaços de texto conforme chegam, ou null se a IA não estiver disponível. */
+export async function streamCompletion(
+  label: string,
+  messages: ChatCompletionMessageParam[],
+  opts: { temperature?: number; maxTokens?: number } = {},
+): Promise<AsyncIterable<string> | null> {
+  const ai = client();
+  if (!ai) return null;
+  const t0 = Date.now();
+  try {
+    const stream = await ai.chat.completions.create({
+      model: MODEL,
+      temperature: opts.temperature ?? 0.7,
+      max_tokens: opts.maxTokens ?? 250,
+      messages,
+      stream: true,
+    });
+    return (async function* () {
+      try {
+        for await (const chunk of stream) {
+          const piece = chunk.choices[0]?.delta?.content;
+          if (piece) yield piece;
+        }
+        console.info(`[ai] ${label} (stream): ${Date.now() - t0} ms`);
+      } catch (err) {
+        console.error(`[ai] ${label} (stream) interrompido após ${Date.now() - t0} ms:`, err instanceof Error ? err.message : err);
+      }
+    })();
+  } catch (err) {
+    console.error(`[ai] ${label} (stream) falhou após ${Date.now() - t0} ms:`, err instanceof Error ? err.message : err);
     return null;
   }
 }
@@ -33,13 +78,17 @@ export type AiResult = { text: string; usedAi: boolean };
 
 /** Reescreve uma nota rápida do professor de forma empática e construtiva para os pais. */
 export async function humanizeNote(rawText: string, studentName: string, parentName: string): Promise<AiResult> {
-  const text = await complete(
-    "Você é um(a) orientador(a) pedagógico(a) de uma escola de ensino básico. Reescreva a nota do professor " +
-      "para os responsáveis do aluno em português do Brasil: tom acolhedor, empático e construtivo, sem julgamentos, " +
-      "sem as palavras 'punição' ou 'castigo'. Comece valorizando algo positivo, descreva o ponto com clareza e " +
-      "termine com uma sugestão prática de como a família pode apoiar em casa. Máximo de 4 frases. Responda só com a mensagem.",
-    `Responsável: ${parentName}\nAluno(a): ${studentName}\nNota do professor: ${rawText}`,
-  );
+  const text = await complete("humanizar recado", [
+    {
+      role: "system",
+      content:
+        "Você é um(a) orientador(a) pedagógico(a) de uma escola de ensino básico. Reescreva a nota do professor " +
+        "para os responsáveis do aluno em português do Brasil: tom acolhedor, empático e construtivo, sem julgamentos, " +
+        "sem as palavras 'punição' ou 'castigo'. Comece valorizando algo positivo, descreva o ponto com clareza e " +
+        "termine com uma sugestão prática de como a família pode apoiar em casa. Máximo de 4 frases. Responda só com a mensagem.",
+    },
+    { role: "user", content: `Responsável: ${parentName}\nAluno(a): ${studentName}\nNota do professor: ${rawText}` },
+  ]);
   if (text) return { text, usedAi: true };
   return {
     usedAi: false,
@@ -55,22 +104,37 @@ export type FeedbackInput = { stars: number; comment: string | null };
 /** Gera um resumo executivo das avaliações da aula para o professor. */
 export async function summarizeFeedback(className: string, feedbacks: FeedbackInput[]): Promise<AiResult> {
   const avg = feedbacks.reduce((s, f) => s + f.stars, 0) / Math.max(feedbacks.length, 1);
-  const comments = feedbacks.filter((f) => f.comment).map((f) => `- (${f.stars}★) ${f.comment}`);
+  // Comentários repetidos viram uma linha só com a contagem: prompt menor, resposta mais rápida.
+  const counts = new Map<string, number>();
+  for (const f of feedbacks) if (f.comment) counts.set(`(${f.stars}★) ${f.comment}`, (counts.get(`(${f.stars}★) ${f.comment}`) ?? 0) + 1);
+  const comments = [...counts].map(([c, n]) => `- ${c}${n > 1 ? ` (×${n})` : ""}`);
 
   const text = await complete(
-    "Você é um(a) coordenador(a) pedagógico(a). A partir das avaliações dos alunos (1 a 3 estrelas e comentários), " +
-      "escreva em português do Brasil um resumo executivo curto para o professor: 1) pontos fortes, 2) pontos a ajustar, " +
-      "3) duas sugestões práticas de didática. Use tópicos curtos. Não identifique alunos.",
-    `Turma: ${className}\nTotal de avaliações: ${feedbacks.length}\nMédia: ${avg.toFixed(1)} de 3\nComentários:\n${
-      comments.join("\n") || "(nenhum comentário)"
-    }`,
+    "resumo de avaliações",
+    [
+      {
+        role: "system",
+        content:
+          "Você é um(a) coordenador(a) pedagógico(a). A partir das avaliações dos alunos (1 a 3 estrelas e comentários), " +
+          "escreva em português do Brasil um resumo executivo curto para o professor: 1) pontos fortes, 2) pontos a ajustar, " +
+          "3) duas sugestões práticas de didática. Use tópicos curtos. Não identifique alunos.",
+      },
+      {
+        role: "user",
+        content: `Turma: ${className}\nTotal de avaliações: ${feedbacks.length}\nMédia: ${avg.toFixed(1)} de 3\nComentários:\n${
+          comments.join("\n") || "(nenhum comentário)"
+        }`,
+      },
+    ],
+    { maxTokens: 350 },
   );
   if (text) return { text, usedAi: true };
   return {
     usedAi: false,
     text:
       `Resumo de ${feedbacks.length} avaliação(ões) — média ${avg.toFixed(1)} de 3 estrelas.\n` +
-      (comments.length ? `Comentários recebidos:\n${comments.join("\n")}\n` : "Nenhum comentário escrito.\n") +
-      `(Configure FEATHERLESS_API_KEY para gerar a análise com IA.)`,
+      (comments.length ? `Comentários recebidos:\n${comments.join("\n")}\n` : "Nenhum comentário escrito.\n"),
   };
 }
+
+export { complete };

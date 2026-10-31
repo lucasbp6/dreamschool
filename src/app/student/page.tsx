@@ -1,4 +1,4 @@
-import { CalendarDays, Flame, GraduationCap, History, Sparkles, Star, Target } from "lucide-react";
+import { CalendarDays, Flame, GraduationCap, History, MessagesSquare, Sparkles, Star, Target } from "lucide-react";
 import { db } from "@/lib/db";
 import { getActingUser } from "@/lib/session";
 import { classroomSchedule } from "@/lib/schedule-data";
@@ -11,6 +11,7 @@ import { Tabs } from "@/components/shared/Tabs";
 import { WorldScene } from "@/components/shared/WorldScene";
 import { Card, CardTitle, PageHeader } from "@/components/shared/ui";
 import { LessonFeedbackForm } from "./LessonFeedbackForm";
+import { MentorChat } from "./MentorChat";
 
 export default async function StudentPage() {
   const acting = await getActingUser("STUDENT");
@@ -27,7 +28,18 @@ export default async function StudentPage() {
     return <PageHeader title={`Olá, ${firstName(student.name)}!`} subtitle="Seu pet ainda está chegando." />;
   }
 
-  const [schedule, feedback] = await Promise.all([classroomSchedule(classroom.id), feedbackDay(student.id)]);
+  const [schedule, feedback, classSubjects, mentorSessions] = await Promise.all([
+    classroomSchedule(classroom.id),
+    feedbackDay(student.id),
+    db.classSubject.findMany({ where: { classroomId: classroom.id }, include: { subject: true }, orderBy: { subject: { name: "asc" } } }),
+    db.mentorSession.findMany({
+      where: { studentId: student.id },
+      orderBy: { createdAt: "desc" },
+      take: 6,
+      include: { messages: { orderBy: { createdAt: "asc" } } },
+    }),
+  ]);
+  const activeMentor = mentorSessions.find((s) => !s.endedAt) ?? null;
   const pending = feedback.required - feedback.ratedRequired;
 
   return (
@@ -96,6 +108,39 @@ export default async function StudentPage() {
                 required={feedback.required}
                 ratedRequired={feedback.ratedRequired}
                 completedToday={feedback.completedToday}
+              />
+            ),
+          },
+          {
+            id: "ensinar",
+            label: "Ensinar o pet",
+            icon: <MessagesSquare size={16} aria-hidden />,
+            content: (
+              <MentorChat
+                subjects={classSubjects.map((cs) => cs.subject.name)}
+                pet={{ petType: pet.petType, petName: pet.petName, mood: pet.mood }}
+                active={
+                  activeMentor && {
+                    id: activeMentor.id,
+                    subjectName: activeMentor.subjectName,
+                    topic: activeMentor.topic,
+                    messages: activeMentor.messages.map((m) => ({
+                      id: m.id,
+                      role: m.role as "STUDENT" | "PET",
+                      content: m.content,
+                    })),
+                  }
+                }
+                past={mentorSessions
+                  .filter((s) => s.endedAt)
+                  .slice(0, 5)
+                  .map((s) => ({
+                    id: s.id,
+                    subjectName: s.subjectName,
+                    topic: s.topic,
+                    recap: s.recap,
+                    createdAt: s.createdAt.toISOString(),
+                  }))}
               />
             ),
           },

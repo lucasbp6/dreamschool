@@ -10,9 +10,14 @@ export function Tabs({ tabs, label }: { tabs: TabItem[]; label: string }) {
   const buttons = useRef<Record<string, HTMLButtonElement | null>>({});
 
   useEffect(() => {
-    const fromHash = window.location.hash.slice(1);
-    if (tabs.some((t) => t.id === fromHash)) setActive(fromHash);
-    // Só na montagem: depois disso a aba é controlada pelos cliques.
+    const fromHash = () => {
+      const id = window.location.hash.slice(1);
+      if (tabs.some((t) => t.id === id)) setActive(id);
+    };
+    fromHash();
+    window.addEventListener("hashchange", fromHash);
+    return () => window.removeEventListener("hashchange", fromHash);
+    // As abas não mudam de id entre renderizações; basta registrar na montagem.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

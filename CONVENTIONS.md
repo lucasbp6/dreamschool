@@ -48,6 +48,14 @@ Plataforma web gamificada para o ensino básico conectando Alunos, Professores, 
 - **Navegação por abas** nas telas de Aluno, Professor e Pais; pet e construção ficam em destaque num cenário lúdico.
 - `DEMO_TODAY=YYYY-MM-DD` no `.env` fixa o "hoje" da aplicação (útil para apresentar a ofensiva num fim de semana).
 
+### G. Ensinar o Pet (Aluno Mentor com IA)
+- Na aba **Ensinar o pet**, o aluno escolhe a matéria e um tema da aula e explica com as próprias palavras. O pet é um **aprendiz curioso**: responde em até 3 frases simples, comemora acertos com uma pergunta que aprofunda o tema e, quando há um erro, mostra a dúvida com gentileza, diz a informação correta e pede para o aluno conferir. Nunca inventa fatos e volta ao tema se a conversa fugir dele.
+- Ao **terminar a aula**, o pet conta o que aprendeu (corrigindo o que ficou errado) e dá uma dica de revisão. Com pelo menos **3 explicações**, a aula vale **+5 XP** para o pet, uma vez por dia (evento "Mentoria").
+- As conversas ficam salvas (`MentorSession`, `MentorMessage`); as respostas do pet chegam em streaming pela rota `/api/mentor/[sessionId]`. Prompts e regras em `src/lib/mentor.ts`.
+
+### H. Chamadas de IA
+- Toda chamada à Featherless tem limite de **15 s** (1 nova tentativa); se estourar ou falhar, a tela usa um texto alternativo e avisa. O tempo de cada chamada aparece no log do servidor (`[ai] ...`). O modelo pode ser trocado com `FEATHERLESS_MODEL`.
+
 ## 2. Stack Tecnológica (MVP Hackathon)
 - **Framework:** Next.js 14+ (App Router) com TypeScript + Tailwind CSS + Lucide Icons.
 - **Banco de Dados:** SQLite local com Prisma ORM (`prisma/schema.prisma`).

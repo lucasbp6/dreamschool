@@ -10,3 +10,4 @@ Cada prompt enviado durante o desenvolvimento fica em um arquivo numerado, com o
 | 004 | [004-cadastros-e-grade-horaria.md](004-cadastros-e-grade-horaria.md) | Cadastros do gestor e grade horária |
 | 005 | [005-abas-chamada-notas-ofensiva.md](005-abas-chamada-notas-ofensiva.md) | Abas, nomes completos, avaliação por professor, chamada, notas e ofensiva |
 | 006 | [006-estilo-infantil-pastel.md](006-estilo-infantil-pastel.md) | Estilo infantil pastel com a arte de referência |
+| 007 | [007-desempenho-ia-e-mentor-do-pet.md](007-desempenho-ia-e-mentor-do-pet.md) | Lentidão do resumo com IA e conversa aluno-mentor com o pet |

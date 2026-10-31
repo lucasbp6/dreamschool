@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { Send, Wand2 } from "lucide-react";
 import { previewParentNote, saveParentNote } from "@/lib/actions";
+import { useElapsed } from "@/components/shared/useElapsed";
 
 export function ParentNoteComposer({ students }: { students: { id: string; name: string }[] }) {
   const [studentId, setStudentId] = useState(students[0]?.id ?? "");
@@ -11,6 +12,7 @@ export function ParentNoteComposer({ students }: { students: { id: string; name:
   const [usedAi, setUsedAi] = useState<boolean | null>(null);
   const [status, setStatus] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const elapsed = useElapsed(pending);
 
   const humanize = () =>
     startTransition(async () => {
@@ -61,13 +63,13 @@ export function ParentNoteComposer({ students }: { students: { id: string; name:
         disabled={pending || !raw.trim() || !studentId}
         className="inline-flex items-center gap-2 rounded-full bg-brand px-4 py-2 font-bold text-on-brand disabled:opacity-50"
       >
-        <Wand2 size={16} aria-hidden /> {pending && !draft ? "Humanizando…" : "Humanizar com IA"}
+        <Wand2 size={16} aria-hidden /> {pending && !draft ? `Humanizando… ${elapsed}s` : "Humanizar com IA"}
       </button>
 
       {draft && (
         <div className="space-y-2 rounded-2xl border border-line bg-surface-2 p-3">
           <label className="block font-bold text-muted" htmlFor="parent-note-draft">
-            Prévia para a família {usedAi === false && <span className="font-normal">(texto modelo — IA indisponível)</span>}
+            Prévia para a família {usedAi === false && <span className="font-normal">(texto modelo — a IA demorou ou está indisponível)</span>}
           </label>
           <textarea
             id="parent-note-draft"

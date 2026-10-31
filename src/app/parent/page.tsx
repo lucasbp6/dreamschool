@@ -25,7 +25,7 @@ export default async function ParentPage({ searchParams }: { searchParams: Promi
       classroom: true,
       events: { orderBy: { createdAt: "desc" }, take: 15 },
       parentNotes: { orderBy: { createdAt: "desc" } },
-      _count: { select: { events: { where: { type: { in: ["POSITIVE", "RECOVERY", "STREAK"] } } } } },
+      _count: { select: { events: { where: { type: { in: ["POSITIVE", "RECOVERY", "STREAK", "MENTOR"] } } } } },
     },
   });
   const child = children.find((c) => c.id === filho) ?? children[0];
