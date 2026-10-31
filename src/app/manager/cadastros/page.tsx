@@ -1,7 +1,7 @@
 import { BookOpen, GraduationCap, School, UserPlus, Users } from "lucide-react";
 import { db } from "@/lib/db";
 import { getActingUser } from "@/lib/session";
-import { BUILDING_INFO, BUILDING_TYPES, PET_INFO, PET_TYPES, type PetType } from "@/lib/game";
+import { BUILDING_INFO, BUILDING_TYPES, PET_INFO, PET_TYPES } from "@/lib/game";
 import {
   assignSubject,
   createClassroom,
@@ -49,7 +49,7 @@ export default async function CadastrosPage() {
               <Select name="buildingType" defaultValue="TREEHOUSE">
                 {BUILDING_TYPES.map((t) => (
                   <option key={t} value={t}>
-                    {BUILDING_INFO[t].emojis[2]} {BUILDING_INFO[t].label}
+                    {BUILDING_INFO[t].label}
                   </option>
                 ))}
               </Select>
@@ -93,7 +93,7 @@ export default async function CadastrosPage() {
                   <Select name="petType" defaultValue="CAT">
                     {PET_TYPES.map((t) => (
                       <option key={t} value={t}>
-                        {PET_INFO[t].emoji} {PET_INFO[t].label}
+                        {PET_INFO[t].label}
                       </option>
                     ))}
                   </Select>
@@ -214,7 +214,6 @@ export default async function CadastrosPage() {
                     {c.students.map((s) => (
                       <li key={s.id} className="flex flex-wrap justify-between gap-2 py-1.5">
                         <span className="font-bold text-ink">
-                          {s.pet ? `${PET_INFO[s.pet.petType as PetType]?.emoji ?? ""} ` : ""}
                           {s.name}
                           {s.pet && <span className="font-normal text-muted"> · {s.pet.petName}</span>}
                         </span>

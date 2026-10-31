@@ -1,5 +1,6 @@
 import { Flame, Hammer } from "lucide-react";
-import { BUILDING_INFO, buildingLevel, type BuildingType } from "@/lib/game";
+import Image from "next/image";
+import { BUILDING_INFO, buildingArt, buildingLevel, type BuildingType } from "@/lib/game";
 import { Badge, ProgressBar } from "./ui";
 
 /** Construção coletiva da turma: estágios, progresso por tijolinhos, reparo e sequência. */
@@ -24,13 +25,15 @@ export function BuildingView({
     <div>
       <div className="flex items-center gap-4">
         <div
-          className={`flex shrink-0 items-center justify-center rounded-2xl bg-sky-soft ${compact ? "h-16 w-16 text-4xl" : "h-28 w-28 text-7xl"}`}
-          role="img"
-          aria-label={`${info.label}: ${lvl.name}`}
+          className={`flex shrink-0 items-center justify-center rounded-2xl bg-brand-soft p-1 ${compact ? "h-20 w-20" : "h-28 w-28"}`}
         >
-          <span aria-hidden className={maintenanceNeeded > 0 ? "opacity-70" : ""}>
-            {info.emojis[lvl.level - 1]}
-          </span>
+          <Image
+            src={buildingArt(type, lvl.level)}
+            alt={`${info.label}: ${lvl.name}`}
+            width={120}
+            height={110}
+            className={`h-auto w-full ${maintenanceNeeded > 0 ? "opacity-80" : ""}`}
+          />
         </div>
         <div className="min-w-0 flex-1">
           <div className="text-sm font-semibold text-muted">{info.label}</div>
@@ -41,7 +44,7 @@ export function BuildingView({
             <ProgressBar value={lvl.progress} label="Progresso da construção" tone="sky" />
           </div>
           <div className="mt-1 text-xs text-muted tabular-nums">
-            🧱 {bricks} tijolinhos
+            {bricks} tijolinhos
             {lvl.needed !== null ? ` · faltam ${lvl.needed - lvl.current} para ${info.stages[lvl.level]}` : " · nível máximo!"}
           </div>
         </div>
@@ -54,9 +57,13 @@ export function BuildingView({
               key={stage}
               className={`rounded-xl border p-2 ${i < lvl.level ? "border-sky bg-sky-soft text-ink" : "border-line text-muted"}`}
             >
-              <div aria-hidden className={`text-2xl ${i < lvl.level ? "" : "grayscale opacity-50"}`}>
-                {info.emojis[i]}
-              </div>
+              <Image
+                src={buildingArt(type, i + 1)}
+                alt=""
+                width={80}
+                height={70}
+                className={`mx-auto h-auto w-16 ${i < lvl.level ? "" : "opacity-40 grayscale"}`}
+              />
               <div className="font-bold">{stage}</div>
             </li>
           ))}

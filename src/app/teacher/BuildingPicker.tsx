@@ -1,8 +1,9 @@
 "use client";
 
 import { useTransition } from "react";
+import Image from "next/image";
 import { setBuildingType } from "@/lib/actions";
-import { BUILDING_INFO, BUILDING_TYPES } from "@/lib/game";
+import { BUILDING_INFO, BUILDING_TYPES, buildingArt } from "@/lib/game";
 
 export function BuildingPicker({ classroomId, current }: { classroomId: string; current: string }) {
   const [pending, startTransition] = useTransition();
@@ -18,13 +19,11 @@ export function BuildingPicker({ classroomId, current }: { classroomId: string; 
               key={type}
               aria-pressed={active}
               onClick={() => startTransition(() => setBuildingType(classroomId, type))}
-              className={`rounded-xl border p-2 text-left text-sm font-bold transition ${
+              className={`flex flex-col items-center gap-1 rounded-xl border p-2 text-center text-sm font-bold transition ${
                 active ? "border-brand bg-brand-soft text-ink" : "border-line text-muted hover:border-brand"
               }`}
             >
-              <span aria-hidden className="mr-1">
-                {info.emojis[2]}
-              </span>
+              <Image src={buildingArt(type, 3)} alt="" width={90} height={80} className="h-14 w-auto" />
               {info.label}
             </button>
           );

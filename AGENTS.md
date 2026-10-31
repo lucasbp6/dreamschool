@@ -5,15 +5,15 @@ Plataforma web gamificada para o ensino básico conectando Alunos, Professores, 
 
 ### A. Construção Coletiva da Turma (Customizável)
 - Cada turma escolhe seu **Tema de Construção** (`buildingType`):
-  1. `TREEHOUSE` (Casa na Árvore): Mudinha -> Cabana de Madeira -> Mansão na Copa.
-  2. `CASTLE` (Castelo): Acampamento -> Forte de Pedra -> Castelo Real.
-  3. `SPACE_BASE` (Estação Espacial): Cápsula -> Módulo Lunar -> Base Orbital.
-  4. `ECO_VILLAGE` (Vila Sustentável): Horta -> Eco-Cabana -> Vila Solar.
+  1. `TREEHOUSE` (Casa na Árvore): Primeiras Tábuas -> Cabana de Madeira -> Mansão na Copa.
+  2. `CASTLE` (Castelo): Primeira Muralha -> Forte de Pedra -> Castelo Real.
+  3. `SPACE_BASE` (Estação Espacial): Plataforma de Lançamento -> Foguete em Montagem -> Foguete Estelar.
+  4. `OBSERVATORY` (Observatório): Fundação -> Cúpula em Obras -> Observatório Estelar.
 - **Progresso por Tijolinhos (`bricks`):** Os tijolinhos acumulados nunca diminuem.
   - Nível 1: 0–99 tijolinhos | Nível 2: 100–299 tijolinhos | Nível 3: 300+ tijolinhos.
 
 ### B. Evolução Individual (Pet do Aluno)
-- Cada aluno possui um **Pet** (`petType`, `petName`, `xp`, `mood`).
+- Cada aluno possui um **Pet** (`petType`, `petName`, `xp`, `mood`). Espécies: `CAT`, `OWL`, `BEAR`, `BUNNY`, `FOX`, `DOG`, `DRAGON`.
 - O XP do Pet nunca diminui.
   - Nível 1: 0–49 XP (Filhote) | Nível 2: 50–149 XP (Jovem) | Nível 3: 150+ XP (Guardião).
 
@@ -59,5 +59,8 @@ Plataforma web gamificada para o ensino básico conectando Alunos, Professores, 
 - **Registro de prompts:** todo prompt de desenvolvimento é salvo em `prompts/NNN-titulo.md` (data, prompt na íntegra, resumo do que foi feito) e indexado em `prompts/README.md`.
 
 ## 4. Padrões de Interface e Acessibilidade
+- **Estilo visual infantil e pastel**, a partir das ilustrações de referência (`construcoes1.jpeg`, `contrucoes2.jpeg`, `rostos.jpeg`, `telainicial.jpeg`): fundo creme, lavanda e tons dessaturados, construções em ilhas de nuvem, enfeites de nuvens e brilhos. Não usar emojis como ilustração.
+  - Construções: `public/art/buildings/<tema>-<nível>.png`, recortadas das referências com `scripts/art/cutout.ps1` (posições em `scripts/art/jobs.json`).
+  - Pets: SVG em `src/components/shared/PetArt.tsx` (rosto plano, manchinhas claras nos olhos, acessório na cabeça; expressão muda com o humor).
 - Barra de Acessibilidade fixa (Alto Contraste, Tamanho de Fonte, Fonte amigável para dislexia).
 - Feedbacks visuais acolhedores: nunca usar cor vermelha agressiva ou palavras como "Punição/Castigo" na tela do aluno; usar termos como **"Missão de Cuidado"**, **"Reparo da Turma"** e **"Ponto de Atenção"** (na cor âmbar/laranja).

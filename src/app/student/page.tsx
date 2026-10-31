@@ -32,7 +32,7 @@ export default async function StudentPage() {
 
   return (
     <div>
-      <PageHeader title={`Olá, ${firstName(student.name)}! 👋`} subtitle={`${student.name} · Turma ${classroom.name}`} />
+      <PageHeader title={`Olá, ${firstName(student.name)}!`} subtitle={`${student.name} · Turma ${classroom.name}`} />
       <Tabs
         label="Áreas do aluno"
         tabs={[
@@ -65,7 +65,7 @@ export default async function StudentPage() {
                     <CardTitle icon={<Target size={20} className="text-success" aria-hidden />}>Tudo em dia!</CardTitle>
                     <p className="text-ink">
                       Continue participando para ganhar XP e tijolinhos para a turma. Avaliar seus professores todo dia
-                      mantém sua ofensiva acesa 🔥
+                      mantém sua ofensiva acesa.
                     </p>
                   </Card>
                 )}

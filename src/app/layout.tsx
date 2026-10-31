@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { Atkinson_Hyperlegible, Nunito } from "next/font/google";
 import "./globals.css";
@@ -35,7 +36,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
           <AccessibilityBar />
           <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3">
             <Link href="/" className="flex items-center gap-2 text-lg font-extrabold text-ink">
-              <span aria-hidden className="text-2xl">🌈</span> Escola dos Sonhos
+              <Image src="/art/books.png" alt="" width={40} height={40} className="h-10 w-10" priority /> Escola dos Sonhos
             </Link>
             <RoleSwitcher
               users={users.map((u) => ({ ...u, role: u.role as Role }))}

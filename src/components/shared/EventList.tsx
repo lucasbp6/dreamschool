@@ -43,7 +43,7 @@ export function EventList({ events, showStudent = false }: { events: EventItem[]
               <div className="text-xs text-muted">
                 {fmt.format(e.createdAt)}
                 {e.xpDelta > 0 && ` · +${e.xpDelta} XP`}
-                {e.bricksDelta > 0 && ` · +${e.bricksDelta} 🧱`}
+                {e.bricksDelta > 0 && ` · +${e.bricksDelta} tijolinhos`}
               </div>
             </div>
           </li>

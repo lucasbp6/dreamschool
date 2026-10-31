@@ -2,33 +2,36 @@
 
 /* Tokens semânticos — a classe .hc (Alto Contraste) troca só os valores. */
 :root {
-  --bg: #f6f3ff;
-  --surface: #ffffff;
-  --surface-2: #faf8ff;
-  --ink: #1f1b3a;
-  --muted: #625d85;
-  --line: #e4def5;
-  --brand: #6a46f0;
-  --brand-soft: #eee8ff;
+  /* Paleta pastel no estilo das ilustrações: creme, lavanda e tons dessaturados. */
+  --bg: #f8f4e9;
+  --surface: #fffdf8;
+  --surface-2: #f3eee2;
+  --ink: #3b2f50;
+  --muted: #6c6280;
+  --line: #e6ddcc;
+  --brand: #7458a8;
+  --brand-soft: #ece5f5;
   --on-brand: #ffffff;
-  --attention: #a14f00; /* âmbar/laranja: Ponto de Atenção (nunca vermelho) */
-  --attention-soft: #fff3df;
-  --success: #12733a;
-  --success-soft: #e5f7ec;
-  --sky: #0b6fa4;
-  --sky-soft: #e3f3fc;
+  --attention: #95561c; /* âmbar/laranja: Ponto de Atenção (nunca vermelho) */
+  --attention-soft: #f6e6d1;
+  --success: #3b7559;
+  --success-soft: #e1eee5;
+  --sky: #3d6a83;
+  --sky-soft: #e0ebf1;
   /* Tons suaves das matérias na grade horária. */
-  --tint-1: #efe9ff;
-  --tint-2: #e2f4fb;
-  --tint-3: #e6f6ea;
-  --tint-4: #fff1dc;
-  --tint-5: #fde8f1;
-  --tint-6: #eef1f6;
-  /* Cenário do pet e da construção. */
-  --sky-top: #9bd7ff;
-  --sky-bottom: #e8f6ff;
-  --grass: #7ccf7a;
-  --grass-dark: #4fa65a;
+  --tint-1: #ebe3f5;
+  --tint-2: #e0ebf1;
+  --tint-3: #e1eee5;
+  --tint-4: #f5e7d6;
+  --tint-5: #f3e1ea;
+  --tint-6: #ebe8ee;
+  /* Cenário: céu creme-lavanda e nuvens. */
+  --sky-top: #ece4f6;
+  --sky-bottom: #f8f4e9;
+  --cloud: #e3daf2;
+  --cloud-deep: #cfc2e8;
+  --cloud-blue: #d8e6f0;
+  --sparkle: #d9b864;
   color-scheme: light;
 }
 
@@ -56,8 +59,10 @@ html.hc {
   --tint-6: #000000;
   --sky-top: #000000;
   --sky-bottom: #000000;
-  --grass: #0b3d12;
-  --grass-dark: #0b3d12;
+  --cloud: #1a1a1a;
+  --cloud-deep: #2a2a2a;
+  --cloud-blue: #1a1a1a;
+  --sparkle: #ffe14d;
   color-scheme: dark;
 }
 
@@ -138,12 +143,11 @@ body {
 .twinkle { animation: twinkle 2.4s ease-in-out infinite; }
 
 .scene-sky { background: linear-gradient(180deg, var(--sky-top), var(--sky-bottom)); }
-.scene-grass {
-  background: linear-gradient(180deg, var(--grass), var(--grass-dark));
-  border-top-left-radius: 50% 2.5rem;
-  border-top-right-radius: 50% 2.5rem;
-}
-html.hc .scene-grass { border-top: 2px solid var(--line); }
+.scene-cloud { fill: var(--cloud); }
+.scene-cloud-deep { fill: var(--cloud-deep); }
+.scene-cloud-blue { fill: var(--cloud-blue); }
+.scene-sparkle { fill: var(--sparkle); }
+html.hc .scene-cloud, html.hc .scene-cloud-deep { stroke: var(--line); stroke-width: 2; }
 html.hc .cloud, html.hc .cloud-slow { display: none; }
 
 @media (prefers-reduced-motion: reduce) {

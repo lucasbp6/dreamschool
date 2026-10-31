@@ -2,7 +2,7 @@
 
 Plataforma gamificada para o ensino básico que conecta **Alunos, Professores, Pais e Gestores**.
 Cada aluno cuida de um **pet** que evolui com XP, e cada turma constrói junta a sua **construção coletiva**
-(Casa na Árvore, Castelo, Estação Espacial ou Vila Sustentável) com tijolinhos. Ninguém perde progresso:
+(Casa na Árvore, Castelo, Estação Espacial ou Observatório) com tijolinhos. Ninguém perde progresso:
 um deslize vira um **Ponto de Atenção** com uma Missão de Cuidado para o pet e um Reparo para a turma.
 
 As regras completas estão em [`AGENTS.md`](AGENTS.md). Os prompts usados no desenvolvimento ficam em [`prompts/`](prompts/README.md).
@@ -39,6 +39,8 @@ A ofensiva de avaliações depende das aulas do dia. Para apresentar num fim de 
 11. Como **Aluno** (Lia Fernandes Costa), abra **Avaliar aulas**, escolha cada professor com aula hoje e avalie: ao completar todos, a ofensiva sobe e o pet ganha +3 XP.
 12. Como **Professor**, use as abas **Chamada** (presença por matéria e dia) e **Notas** (crie uma avaliação e lance as notas). Veja o resultado no **Boletim** do Aluno e dos Pais.
 
+Para trocar as ilustrações das construções, edite as imagens de referência e rode `powershell -ExecutionPolicy Bypass -File scripts/art/cutout.ps1` (Windows).
+
 A barra de **Acessibilidade** no topo oferece alto contraste, fonte para dislexia e ajuste do tamanho da letra.
 
 ## Stack
@@ -55,9 +57,11 @@ Next.js 15 (App Router) + TypeScript + Tailwind CSS 4 + Lucide · Prisma 6 + SQL
 | `src/lib/schedule.ts` | Regras da grade horária: horários e conflitos de turma/professor (testadas em `schedule.test.ts`) |
 | `src/lib/manager-actions.ts` | Cadastros do gestor e edição da grade |
 | `src/lib/ai.ts` | Humanizador para pais e resumo para o professor |
-| `src/components/shared/` | RoleSwitcher, AccessibilityBar, Tabs, WorldScene (cenário do pet e da construção), ReportCard (boletim), ScheduleGrid, formulários, histórico e UI |
+| `src/components/shared/` | RoleSwitcher, AccessibilityBar, Tabs, WorldScene (cenário do pet e da construção), PetArt (pets em SVG), Decor (nuvens e brilhos), ReportCard (boletim), ScheduleGrid, formulários, histórico e UI |
 | `src/app/{student,teacher,parent,manager}` | Telas de cada perfil (`manager/cadastros` e `manager/grade` para o gestor) |
 | `prisma/` | Schema, migração e seed |
+| `public/art/` | Ilustrações das construções e da tela inicial (recortadas das referências) |
+| `scripts/art/` | Script que recorta as referências JPEG em PNGs transparentes |
 
 ## Scripts
 

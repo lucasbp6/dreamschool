@@ -1,0 +1,186 @@
+[
+ {
+  "src": "construcoes1.jpeg",
+  "x": 20,
+  "y": 55,
+  "w": 330,
+  "h": 255,
+  "erase": [],
+  "tLow": 14,
+  "tHigh": 34,
+  "out": "public/art/buildings/treehouse-1.png"
+ },
+ {
+  "src": "construcoes1.jpeg",
+  "x": 350,
+  "y": 55,
+  "w": 330,
+  "h": 255,
+  "erase": [],
+  "tLow": 14,
+  "tHigh": 34,
+  "out": "public/art/buildings/treehouse-2.png"
+ },
+ {
+  "src": "construcoes1.jpeg",
+  "x": 685,
+  "y": 50,
+  "w": 330,
+  "h": 260,
+  "erase": [],
+  "tLow": 14,
+  "tHigh": 34,
+  "out": "public/art/buildings/treehouse-3.png"
+ },
+ {
+  "src": "construcoes1.jpeg",
+  "x": 20,
+  "y": 350,
+  "w": 330,
+  "h": 218,
+  "erase": [],
+  "tLow": 14,
+  "tHigh": 34,
+  "out": "public/art/buildings/observatory-1.png"
+ },
+ {
+  "src": "construcoes1.jpeg",
+  "x": 350,
+  "y": 348,
+  "w": 330,
+  "h": 220,
+  "erase": [],
+  "tLow": 14,
+  "tHigh": 34,
+  "out": "public/art/buildings/observatory-2.png"
+ },
+ {
+  "src": "construcoes1.jpeg",
+  "x": 685,
+  "y": 312,
+  "w": 335,
+  "h": 256,
+  "erase": [
+   790,
+   312,
+   110,
+   40
+  ],
+  "tLow": 14,
+  "tHigh": 34,
+  "out": "public/art/buildings/observatory-3.png"
+ },
+ {
+  "src": "contrucoes2.jpeg",
+  "x": 20,
+  "y": 88,
+  "w": 330,
+  "h": 222,
+  "erase": [],
+  "tLow": 14,
+  "tHigh": 34,
+  "out": "public/art/buildings/space_base-1.png"
+ },
+ {
+  "src": "contrucoes2.jpeg",
+  "x": 350,
+  "y": 35,
+  "w": 330,
+  "h": 275,
+  "erase": [
+   375,
+   45,
+   100,
+   45
+  ],
+  "tLow": 14,
+  "tHigh": 34,
+  "out": "public/art/buildings/space_base-2.png"
+ },
+ {
+  "src": "contrucoes2.jpeg",
+  "x": 690,
+  "y": 22,
+  "w": 330,
+  "h": 274,
+  "erase": [
+   705,
+   42,
+   100,
+   45
+  ],
+  "tLow": 14,
+  "tHigh": 34,
+  "out": "public/art/buildings/space_base-3.png"
+ },
+ {
+  "src": "contrucoes2.jpeg",
+  "x": 20,
+  "y": 350,
+  "w": 330,
+  "h": 218,
+  "erase": [
+   140,
+   312,
+   90,
+   40
+  ],
+  "tLow": 14,
+  "tHigh": 34,
+  "out": "public/art/buildings/castle-1.png"
+ },
+ {
+  "src": "contrucoes2.jpeg",
+  "x": 350,
+  "y": 350,
+  "w": 330,
+  "h": 218,
+  "erase": [
+   470,
+   312,
+   95,
+   40
+  ],
+  "tLow": 14,
+  "tHigh": 34,
+  "out": "public/art/buildings/castle-2.png"
+ },
+ {
+  "src": "contrucoes2.jpeg",
+  "x": 680,
+  "y": 290,
+  "w": 340,
+  "h": 278,
+  "erase": [
+   680,
+   320,
+   95,
+   45
+  ],
+  "tLow": 14,
+  "tHigh": 34,
+  "out": "public/art/buildings/castle-3.png"
+ },
+ {
+  "src": "telainicial.jpeg",
+  "x": 150,
+  "y": 745,
+  "w": 270,
+  "h": 260,
+  "erase": [],
+  "tLow": 14,
+  "tHigh": 34,
+  "out": "public/art/books.png"
+ },
+ {
+  "src": "telainicial.jpeg",
+  "x": 0,
+  "y": 150,
+  "w": 572,
+  "h": 600,
+  "erase": [],
+  "tLow": 0,
+  "tHigh": 0,
+  "out": "public/art/school.png"
+ }
+]

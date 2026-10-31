@@ -27,24 +27,26 @@ export const STREAK_BONUS_BRICKS = 5;
 
 // ---------- Pets ----------
 
-export const PET_TYPES = ["DRAGON", "CAT", "DOG", "OWL", "BUNNY", "FOX"] as const;
+// O desenho de cada pet fica em src/components/shared/PetArt.tsx.
+export const PET_TYPES = ["CAT", "OWL", "BEAR", "BUNNY", "FOX", "DOG", "DRAGON"] as const;
 export type PetType = (typeof PET_TYPES)[number];
 
-export const PET_INFO: Record<PetType, { label: string; emoji: string }> = {
-  DRAGON: { label: "Dragãozinho", emoji: "🐉" },
-  CAT: { label: "Gatinho", emoji: "🐱" },
-  DOG: { label: "Cachorrinho", emoji: "🐶" },
-  OWL: { label: "Corujinha", emoji: "🦉" },
-  BUNNY: { label: "Coelhinho", emoji: "🐰" },
-  FOX: { label: "Raposinha", emoji: "🦊" },
+export const PET_INFO: Record<PetType, { label: string }> = {
+  CAT: { label: "Gatinho" },
+  OWL: { label: "Corujinha" },
+  BEAR: { label: "Ursinho" },
+  BUNNY: { label: "Coelhinho" },
+  FOX: { label: "Raposinha" },
+  DOG: { label: "Cachorrinho" },
+  DRAGON: { label: "Dragãozinho" },
 };
 
 export type Mood = "HAPPY" | "NEUTRAL" | "TIRED";
 
-export const MOOD_INFO: Record<Mood, { label: string; emoji: string }> = {
-  HAPPY: { label: "Radiante", emoji: "✨" },
-  NEUTRAL: { label: "Tranquilo", emoji: "🙂" },
-  TIRED: { label: "Precisando de cuidado", emoji: "💤" },
+export const MOOD_INFO: Record<Mood, { label: string }> = {
+  HAPPY: { label: "Radiante" },
+  NEUTRAL: { label: "Tranquilo" },
+  TIRED: { label: "Precisando de cuidado" },
 };
 
 const PET_LEVELS = [
@@ -55,38 +57,39 @@ const PET_LEVELS = [
 
 // ---------- Construção da turma ----------
 
-export const BUILDING_TYPES = ["TREEHOUSE", "CASTLE", "SPACE_BASE", "ECO_VILLAGE"] as const;
+export const BUILDING_TYPES = ["TREEHOUSE", "CASTLE", "SPACE_BASE", "OBSERVATORY"] as const;
 export type BuildingType = (typeof BUILDING_TYPES)[number];
 
+// Os estágios acompanham a arte em public/art/buildings/<tema>-<nível>.png.
 export const BUILDING_INFO: Record<
   BuildingType,
-  { label: string; stages: [string, string, string]; emojis: [string, string, string]; repairTask: string }
+  { label: string; stages: [string, string, string]; repairTask: string }
 > = {
   TREEHOUSE: {
     label: "Casa na Árvore",
-    stages: ["Mudinha", "Cabana de Madeira", "Mansão na Copa"],
-    emojis: ["🌱", "🛖", "🌳"],
+    stages: ["Primeiras Tábuas", "Cabana de Madeira", "Mansão na Copa"],
     repairTask: "Reforçar os galhos da Casa na Árvore",
   },
   CASTLE: {
     label: "Castelo",
-    stages: ["Acampamento", "Forte de Pedra", "Castelo Real"],
-    emojis: ["⛺", "🏯", "🏰"],
+    stages: ["Primeira Muralha", "Forte de Pedra", "Castelo Real"],
     repairTask: "Arrumar o jardim do Castelo",
   },
   SPACE_BASE: {
     label: "Estação Espacial",
-    stages: ["Cápsula", "Módulo Lunar", "Base Orbital"],
-    emojis: ["🚀", "🌙", "🛰️"],
-    repairTask: "Consertar a antena da Base",
+    stages: ["Plataforma de Lançamento", "Foguete em Montagem", "Foguete Estelar"],
+    repairTask: "Consertar a janelinha do Foguete",
   },
-  ECO_VILLAGE: {
-    label: "Vila Sustentável",
-    stages: ["Horta", "Eco-Cabana", "Vila Solar"],
-    emojis: ["🥕", "🏡", "☀️"],
-    repairTask: "Cuidar da horta da Vila",
+  OBSERVATORY: {
+    label: "Observatório",
+    stages: ["Fundação", "Cúpula em Obras", "Observatório Estelar"],
+    repairTask: "Limpar a lente do telescópio",
   },
 };
+
+export function buildingArt(type: BuildingType, level: number) {
+  return `/art/buildings/${type.toLowerCase()}-${level}.png`;
+}
 
 const BUILDING_LEVELS = [
   { level: 1, min: 0 },

@@ -27,9 +27,9 @@ describe("níveis", () => {
   });
 
   it("construção muda de nível em 100 e 300 tijolinhos", () => {
-    expect(buildingLevel(99, "CASTLE").name).toBe("Acampamento");
+    expect(buildingLevel(99, "CASTLE").name).toBe("Primeira Muralha");
     expect(buildingLevel(100, "CASTLE").name).toBe("Forte de Pedra");
-    expect(buildingLevel(300, "SPACE_BASE").name).toBe("Base Orbital");
+    expect(buildingLevel(300, "OBSERVATORY").name).toBe("Observatório Estelar");
     expect(buildingLevel(150, "TREEHOUSE").progress).toBe(0.25);
   });
 });

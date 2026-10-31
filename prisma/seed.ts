@@ -62,7 +62,7 @@ async function main() {
   const students = [
     { name: "João Pedro Almeida", room: castle, parent: maeJoao, pet: ["DRAGON", "Faísca", 60, "TIRED", "Entregar a próxima tarefa"] },
     { name: "Lia Fernandes Costa", room: castle, parent: paiLia, pet: ["OWL", "Sábia", 160, "HAPPY", null] },
-    { name: "Pedro Henrique Souza", room: castle, parent: null, pet: ["DOG", "Bolinha", 30, "NEUTRAL", null] },
+    { name: "Pedro Henrique Souza", room: castle, parent: null, pet: ["BEAR", "Bolinha", 30, "NEUTRAL", null] },
     { name: "Sofia Ribeiro Lima", room: space, parent: null, pet: ["CAT", "Luna", 90, "HAPPY", null] },
     { name: "Miguel Santos Oliveira", room: space, parent: null, pet: ["FOX", "Cometa", 20, "NEUTRAL", null] },
     { name: "Helena Martins Rocha", room: space, parent: null, pet: ["BUNNY", "Pipoca", 45, "HAPPY", null] },

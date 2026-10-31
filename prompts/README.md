@@ -9,3 +9,4 @@ Cada prompt enviado durante o desenvolvimento fica em um arquivo numerado, com o
 | 003 | [003-dev-unico-e-registro-de-prompts.md](003-dev-unico-e-registro-de-prompts.md) | Dev único, registro de prompts e implementação |
 | 004 | [004-cadastros-e-grade-horaria.md](004-cadastros-e-grade-horaria.md) | Cadastros do gestor e grade horária |
 | 005 | [005-abas-chamada-notas-ofensiva.md](005-abas-chamada-notas-ofensiva.md) | Abas, nomes completos, avaliação por professor, chamada, notas e ofensiva |
+| 006 | [006-estilo-infantil-pastel.md](006-estilo-infantil-pastel.md) | Estilo infantil pastel com a arte de referência |

@@ -21,7 +21,7 @@ model School {
 model Classroom {
   id                String            @id @default(cuid())
   name              String
-  buildingType      String            @default("TREEHOUSE") // TREEHOUSE | CASTLE | SPACE_BASE | ECO_VILLAGE
+  buildingType      String            @default("TREEHOUSE") // TREEHOUSE | CASTLE | SPACE_BASE | OBSERVATORY
   bricks            Int               @default(0)
   maintenanceNeeded Int               @default(0)
   streak            Int               @default(0)
@@ -59,7 +59,7 @@ model User {
 
 model Pet {
   id              String  @id @default(cuid())
-  petType         String // DRAGON | CAT | DOG | OWL | BUNNY | FOX
+  petType         String // CAT | OWL | BEAR | BUNNY | FOX | DOG | DRAGON
   petName         String
   xp              Int     @default(0)
   mood            String  @default("NEUTRAL") // HAPPY | NEUTRAL | TIRED

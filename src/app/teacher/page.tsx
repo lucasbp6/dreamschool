@@ -131,7 +131,7 @@ export default async function TeacherPage({ searchParams }: { searchParams: Prom
                       Pontos da {classroom.name}
                     </CardTitle>
                     <p className="mb-3 text-sm text-muted">
-                      Ação positiva: +10 XP para o pet e +10 🧱 para a turma. Ponto de Atenção: sem perda de progresso — o
+                      Ação positiva: +10 XP para o pet e +10 tijolinhos para a turma. Ponto de Atenção: sem perda de progresso — o
                       pet ganha uma Missão de Cuidado e a turma um Reparo.
                     </p>
                     <ul className="space-y-3">
