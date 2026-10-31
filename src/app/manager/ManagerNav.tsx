@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CalendarDays, CalendarRange, LayoutDashboard, UserPlus } from "lucide-react";
+import { CalendarDays, CalendarRange, LayoutDashboard, MessagesSquare, UserPlus } from "lucide-react";
 
 const LINKS = [
   { href: "/manager", label: "Visão geral", Icon: LayoutDashboard },
   { href: "/manager/cadastros", label: "Cadastros", Icon: UserPlus },
   { href: "/manager/grade", label: "Grade horária", Icon: CalendarDays },
   { href: "/manager/calendario", label: "Calendário letivo", Icon: CalendarRange },
+  { href: "/manager/mensagens", label: "Mensagens", Icon: MessagesSquare },
 ];
 
 export function ManagerNav() {

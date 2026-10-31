@@ -64,6 +64,12 @@ Plataforma web gamificada para o ensino básico conectando Alunos, Professores, 
 ### H. Chamadas de IA
 - Toda chamada à Featherless tem limite de **15 s** (30 s na mentoria; 1 nova tentativa); se estourar ou falhar, a tela usa um texto alternativo e avisa. O tempo de cada chamada aparece no log do servidor (`[ai] ...`). O modelo pode ser trocado com `FEATHERLESS_MODEL`.
 
+### J. Mensagens, Lembrete dos Cadernos e Cadastros
+- **Mensagens:** o responsável escreve para os professores dos filhos ou para a gestão (aba **Mensagens** dos Pais), opcionalmente sobre um filho; professor (aba **Mensagens**) e gestor (Gestor → Mensagens) respondem. Conversas e mensagens em `Conversation`/`ConversationMessage`; a conversa só conta como lida quando a pessoa a abre (o número de não lidas aparece na aba).
+- **Lembrete dos cadernos:** na aba **Meu mundo**, o pet lembra o aluno de conferir os cadernos das aulas de hoje (ou do próximo dia letivo), com uma lista marcável guardada no navegador.
+- **Cadastros do gestor em abas:** Turmas → Professores → Matérias → Alunos, cada uma com o formulário ao lado da lista.
+- **Caixas longas têm rolagem** (ex.: Aulas anteriores, Últimos registros, listas de cadastro, conversas), com foco pelo teclado.
+
 ## 2. Stack Tecnológica (MVP Hackathon)
 - **Framework:** Next.js 14+ (App Router) com TypeScript + Tailwind CSS + Lucide Icons.
 - **Banco de Dados:** SQLite local com Prisma ORM (`prisma/schema.prisma`).

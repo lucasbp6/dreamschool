@@ -15,3 +15,4 @@ Cada prompt enviado durante o desenvolvimento fica em um arquivo numerado, com o
 | 009 | [009-mentoria-correcoes-e-modelo-maior.md](009-mentoria-correcoes-e-modelo-maior.md) | Correções no "Ensinar o pet" e avaliação de modelo maior |
 | 010 | [010-calendario-letivo-e-ofensiva.md](010-calendario-letivo-e-ofensiva.md) | Calendário letivo e ofensiva que sobe na hora |
 | 011 | [011-avaliacao-por-materia.md](011-avaliacao-por-materia.md) | Avaliação por matéria, prazo de um dia e avaliações anônimas |
+| 012 | [012-scroll-mensagens-cadernos-cadastros.md](012-scroll-mensagens-cadernos-cadastros.md) | Rolagem, mensagens dos pais, lembrete dos cadernos e cadastros em abas |

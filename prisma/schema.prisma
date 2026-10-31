@@ -39,26 +39,30 @@ model Classroom {
 }
 
 model User {
-  id                String            @id @default(cuid())
-  name              String
-  role              String // STUDENT | TEACHER | PARENT | MANAGER
-  schoolId          String
-  school            School            @relation(fields: [schoolId], references: [id])
-  classroomId       String?
-  classroom         Classroom?        @relation("ClassStudents", fields: [classroomId], references: [id])
-  teaching          ClassSubject[]
-  parentId          String?
-  parent            User?             @relation("ParentChildren", fields: [parentId], references: [id])
-  children          User[]            @relation("ParentChildren")
-  pet               Pet?
-  events            Event[]
-  parentNotes       ParentNote[]
-  lessonFeedbacks   LessonFeedback[]  @relation("StudentFeedbacks")
-  feedbacksReceived LessonFeedback[]  @relation("TeacherFeedbacks")
-  feedbackSummaries FeedbackSummary[]
-  attendances       Attendance[]
-  grades            Grade[]
-  mentorSessions    MentorSession[]
+  id                    String                @id @default(cuid())
+  name                  String
+  role                  String // STUDENT | TEACHER | PARENT | MANAGER
+  schoolId              String
+  school                School                @relation(fields: [schoolId], references: [id])
+  classroomId           String?
+  classroom             Classroom?            @relation("ClassStudents", fields: [classroomId], references: [id])
+  teaching              ClassSubject[]
+  parentId              String?
+  parent                User?                 @relation("ParentChildren", fields: [parentId], references: [id])
+  children              User[]                @relation("ParentChildren")
+  pet                   Pet?
+  events                Event[]
+  parentNotes           ParentNote[]
+  lessonFeedbacks       LessonFeedback[]      @relation("StudentFeedbacks")
+  feedbacksReceived     LessonFeedback[]      @relation("TeacherFeedbacks")
+  feedbackSummaries     FeedbackSummary[]
+  attendances           Attendance[]
+  grades                Grade[]
+  mentorSessions        MentorSession[]
+  parentConversations   Conversation[]        @relation("ParentConversations")
+  receivedConversations Conversation[]        @relation("ReceivedConversations")
+  aboutConversations    Conversation[]        @relation("StudentConversations")
+  conversationMessages  ConversationMessage[]
 }
 
 model Pet {
@@ -236,4 +240,31 @@ model CalendarDay {
   school   School @relation(fields: [schoolId], references: [id], onDelete: Cascade)
 
   @@unique([schoolId, date])
+}
+
+// Conversa iniciada por um responsável com um professor ou com o gestor (opcionalmente sobre um filho).
+model Conversation {
+  id              String                @id @default(cuid())
+  subject         String
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+  parentId        String
+  parent          User                  @relation("ParentConversations", fields: [parentId], references: [id], onDelete: Cascade)
+  recipientId     String
+  recipient       User                  @relation("ReceivedConversations", fields: [recipientId], references: [id], onDelete: Cascade)
+  studentId       String?
+  student         User?                 @relation("StudentConversations", fields: [studentId], references: [id], onDelete: SetNull)
+  parentReadAt    DateTime? // até quando o responsável leu
+  recipientReadAt DateTime? // até quando o professor/gestor leu
+  messages        ConversationMessage[]
+}
+
+model ConversationMessage {
+  id             String       @id @default(cuid())
+  body           String
+  createdAt      DateTime     @default(now())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  authorId       String
+  author         User         @relation(fields: [authorId], references: [id], onDelete: Cascade)
 }

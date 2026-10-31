@@ -8,6 +8,7 @@ import {
   GraduationCap,
   Hammer,
   MessageCircleHeart,
+  MessagesSquare,
   Sparkles,
   Users,
 } from "lucide-react";
@@ -18,6 +19,8 @@ import { getActingUser } from "@/lib/session";
 import { teacherSchedule } from "@/lib/schedule-data";
 import { loadCalendar } from "@/lib/calendar-data";
 import { SchoolCalendar } from "@/components/shared/SchoolCalendar";
+import { MessagesPanel } from "@/components/shared/MessagesPanel";
+import { loadConversations, unreadCount } from "@/lib/messages-data";
 import { EventList } from "@/components/shared/EventList";
 import { ScheduleGrid } from "@/components/shared/ScheduleGrid";
 import { Tabs } from "@/components/shared/Tabs";
@@ -48,6 +51,8 @@ export default async function TeacherPage({ searchParams }: { searchParams: Prom
   const today = dayKey(now());
 
   const teachingWeekdays = [...new Set(assignments.flatMap((a) => a.slots.map((s) => s.weekday)))].sort();
+  const conversations = await loadConversations(teacher.id, "TEACHER");
+  const unread = unreadCount(conversations);
   const [classroom, schedule, attendance, assessments, calendar] = await Promise.all([
     selectedId
       ? db.classroom.findUnique({
@@ -180,7 +185,9 @@ export default async function TeacherPage({ searchParams }: { searchParams: Prom
                     </Card>
                     <Card>
                       <CardTitle>Últimos registros</CardTitle>
-                      <EventList events={classroom.events} showStudent />
+                      <div tabIndex={0} aria-label="Últimos registros (com rolagem)" className="max-h-[26rem] overflow-y-auto pr-1">
+                        <EventList events={classroom.events} showStudent />
+                      </div>
                     </Card>
                   </div>
                 </div>
@@ -253,6 +260,17 @@ export default async function TeacherPage({ searchParams }: { searchParams: Prom
                 <ParentNoteComposer key={classroom.id} students={students} />
               </Card>
             ),
+          },
+          {
+            id: "mensagens",
+            label: "Mensagens",
+            icon: <MessagesSquare size={16} aria-hidden />,
+            badge: unread > 0 ? (
+              <span className="rounded-full bg-attention px-1.5 text-xs text-on-brand" aria-label={`${unread} não lidas`}>
+                {unread}
+              </span>
+            ) : undefined,
+            content: <MessagesPanel role="TEACHER" conversations={conversations} />,
           },
           {
             id: "avaliacoes",

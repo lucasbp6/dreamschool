@@ -1,11 +1,13 @@
 import Link from "next/link";
-import { CalendarDays, CalendarRange, GraduationCap, History, Mail, Sparkles } from "lucide-react";
+import { CalendarDays, CalendarRange, GraduationCap, History, Mail, MessagesSquare, Sparkles } from "lucide-react";
 import { db } from "@/lib/db";
 import { getActingUser } from "@/lib/session";
 import { classroomSchedule } from "@/lib/schedule-data";
 import { feedbackDay } from "@/lib/feedback-data";
 import { firstName } from "@/lib/game";
 import { SchoolCalendar } from "@/components/shared/SchoolCalendar";
+import { MessagesPanel } from "@/components/shared/MessagesPanel";
+import { loadConversations, parentRecipients, unreadCount } from "@/lib/messages-data";
 import { EventList } from "@/components/shared/EventList";
 import { ReportCard } from "@/components/shared/ReportCard";
 import { ScheduleGrid } from "@/components/shared/ScheduleGrid";
@@ -40,10 +42,13 @@ export default async function ParentPage({ searchParams }: { searchParams: Promi
     );
   }
 
-  const [schedule, feedback] = await Promise.all([
+  const [schedule, feedback, conversations, recipients] = await Promise.all([
     child.classroomId ? classroomSchedule(child.classroomId) : [],
     feedbackDay(child.id),
+    loadConversations(parent.id, "PARENT"),
+    parentRecipients(parent.id),
   ]);
+  const unread = unreadCount(conversations);
   const pet = child.pet;
 
   return (
@@ -159,6 +164,24 @@ export default async function ParentPage({ searchParams }: { searchParams: Promi
                   </ul>
                 )}
               </Card>
+            ),
+          },
+          {
+            id: "mensagens",
+            label: "Mensagens",
+            icon: <MessagesSquare size={16} aria-hidden />,
+            badge: unread > 0 ? (
+              <span className="rounded-full bg-attention px-1.5 text-xs text-on-brand" aria-label={`${unread} não lidas`}>
+                {unread}
+              </span>
+            ) : undefined,
+            content: (
+              <MessagesPanel
+                role="PARENT"
+                conversations={conversations}
+                recipients={recipients}
+                students={children.map((c) => ({ id: c.id, name: c.name }))}
+              />
             ),
           },
           {

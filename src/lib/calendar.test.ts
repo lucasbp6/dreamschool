@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { addDays, dayStatus, monthWeeks, previousSchoolDay, schoolDaysBetween, type CalendarData } from "./calendar";
+import {
+  addDays,
+  currentOrNextSchoolDay,
+  dayStatus,
+  monthWeeks,
+  previousSchoolDay,
+  schoolDaysBetween,
+  type CalendarData,
+} from "./calendar";
 
 const WEEKDAYS = [1, 2, 3, 4, 5];
 const cal: CalendarData = {
@@ -44,5 +52,12 @@ describe("calendário letivo", () => {
     expect(weeks[0]).toEqual([null, null, null, null, null, null, "2026-11-01"]); // 01/11/2026 é domingo
     expect(weeks.at(-1)?.[0]).toBe("2026-11-30");
     expect(addDays("2026-02-28", 1)).toBe("2026-03-01");
+  });
+
+  it("dia das aulas para o lembrete: hoje ou o próximo dia letivo", () => {
+    expect(currentOrNextSchoolDay("2026-11-03", cal, WEEKDAYS)).toBe("2026-11-03");
+    // sábado 31/10 → domingo → segunda 02/11 é Finados → terça 03/11
+    expect(currentOrNextSchoolDay("2026-10-31", cal, WEEKDAYS)).toBe("2026-11-03");
+    expect(currentOrNextSchoolDay("2026-12-12", cal, WEEKDAYS)).toBeNull(); // depois do fim do período
   });
 });

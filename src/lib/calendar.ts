@@ -84,3 +84,14 @@ export function monthWeeks(year: number, month: number): (string | null)[][] {
   while (cells.length % 7) cells.push(null);
   return Array.from({ length: cells.length / 7 }, (_, w) => cells.slice(w * 7, w * 7 + 7));
 }
+
+/** Hoje, se for dia letivo; senão o próximo dia letivo (procura até ~4 meses à frente, cobrindo as férias). */
+export function currentOrNextSchoolDay(today: string, cal: CalendarData, lessonWeekdays: Iterable<number>) {
+  const weekdays = [...lessonWeekdays];
+  if (weekdays.length === 0) return null;
+  for (let ahead = 0; ahead <= 120; ahead++) {
+    const date = addDays(today, ahead);
+    if (isSchoolDay(date, cal, weekdays)) return date;
+  }
+  return null;
+}

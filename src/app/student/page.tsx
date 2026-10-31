@@ -4,6 +4,7 @@ import { getActingUser } from "@/lib/session";
 import { classroomSchedule } from "@/lib/schedule-data";
 import { feedbackDay } from "@/lib/feedback-data";
 import { firstName } from "@/lib/game";
+import { addDays, currentOrNextSchoolDay, weekdayOf } from "@/lib/calendar";
 import { SchoolCalendar } from "@/components/shared/SchoolCalendar";
 import { EventList } from "@/components/shared/EventList";
 import { ReportCard } from "@/components/shared/ReportCard";
@@ -13,6 +14,7 @@ import { WorldScene } from "@/components/shared/WorldScene";
 import { Card, CardTitle, PageHeader } from "@/components/shared/ui";
 import { LessonFeedbackForm } from "./LessonFeedbackForm";
 import { MentorChat } from "./MentorChat";
+import { NotebookReminder } from "./NotebookReminder";
 
 export default async function StudentPage() {
   const acting = await getActingUser("STUDENT");
@@ -43,6 +45,24 @@ export default async function StudentPage() {
   const activeMentor = mentorSessions.find((s) => !s.endedAt) ?? null;
   const pending = feedback.pending;
 
+  // Lembrete dos cadernos: aulas de hoje ou, sem aula hoje, do próximo dia letivo.
+  const lessonsDate = currentOrNextSchoolDay(feedback.today, feedback.calendar, feedback.lessonDays);
+  const reminderSubjects = lessonsDate
+    ? [
+        ...schedule
+          .filter((s) => s.weekday === weekdayOf(lessonsDate))
+          .sort((a, b) => a.startTime.localeCompare(b.startTime))
+          .reduce((m, s) => (m.has(s.subject) ? m : m.set(s.subject, s.startTime)), new Map<string, string>()),
+      ].map(([name, time]) => ({ name, time }))
+    : [];
+  const reminderWhen = !lessonsDate
+    ? ""
+    : lessonsDate === feedback.today
+      ? "hoje"
+      : lessonsDate === addDays(feedback.today, 1)
+        ? "amanhã"
+        : `${[0, 6].includes(weekdayOf(lessonsDate)) ? "no" : "na"} ${new Intl.DateTimeFormat("pt-BR", { weekday: "long" }).format(new Date(`${lessonsDate}T12:00:00`))}`;
+
   return (
     <div>
       <PageHeader title={`Olá, ${firstName(student.name)}!`} subtitle={`${student.name} · Turma ${classroom.name}`} />
@@ -63,6 +83,16 @@ export default async function StudentPage() {
                     .filter((s) => s.pet && s.id !== student.id)
                     .map((s) => ({ ...s.pet!, id: s.id, ownerName: s.name }))}
                 />
+                {lessonsDate && reminderSubjects.length > 0 && (
+                  <NotebookReminder
+                    studentId={student.id}
+                    firstName={firstName(student.name)}
+                    pet={{ petType: pet.petType, petName: pet.petName, mood: pet.mood }}
+                    date={lessonsDate}
+                    when={reminderWhen}
+                    subjects={reminderSubjects}
+                  />
+                )}
                 {pet.recoveryMission ? (
                   <Card className="border-attention bg-attention-soft">
                     <CardTitle icon={<Target size={20} className="text-attention" aria-hidden />}>Missão de Cuidado</CardTitle>
@@ -77,7 +107,7 @@ export default async function StudentPage() {
                   <Card className="border-success bg-success-soft">
                     <CardTitle icon={<Target size={20} className="text-success" aria-hidden />}>Tudo em dia!</CardTitle>
                     <p className="text-ink">
-                      Continue participando para ganhar XP e tijolinhos para a turma. Avaliar seus professores todo dia
+                      Continue participando para ganhar XP e tijolinhos para a turma. Avaliar todas as aulas de cada dia
                       mantém sua ofensiva acesa.
                     </p>
                   </Card>

@@ -119,7 +119,7 @@ export function MentorChat({ subjects, pet, active, past }: Props) {
         {past.length === 0 ? (
           <p className="text-sm text-muted">Você ainda não deu nenhuma aula para {pet.petName}.</p>
         ) : (
-          <ul className="space-y-3 text-sm">
+          <ul tabIndex={0} aria-label="Aulas anteriores (com rolagem)" className="max-h-[30rem] space-y-3 overflow-y-auto pr-1 text-sm">
             {past.map((p) => (
               <li key={p.id} className="rounded-2xl border border-line bg-surface-2 p-3">
                 <div className="font-extrabold text-ink">{p.topic}</div>
