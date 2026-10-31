@@ -4,9 +4,6 @@ import {
   applyPositive,
   attendanceRate,
   buildingLevel,
-  advanceFeedbackStreak,
-  currentFeedbackStreak,
-  earnsFeedbackBonus,
   firstName,
   gradeAverage,
   petLevel,
@@ -84,47 +81,6 @@ describe("ponto de atenção", () => {
     const second = applyAttention(first.pet, first.classroom, "INTERRUPTION");
     expect(second.mission).toBe("Entregar a próxima tarefa");
     expect(second.classroom.maintenanceNeeded).toBe(10);
-  });
-});
-
-describe("ofensiva de avaliações", () => {
-  it("sobe na primeira avaliação do dia letivo", () => {
-    const r = advanceFeedbackStreak({ feedbackStreak: 0, lastFeedbackDay: null }, "2026-10-26", "2026-10-23");
-    expect(r).toEqual({ feedbackStreak: 1, lastFeedbackDay: "2026-10-26", changed: true });
-  });
-
-  it("continua se avaliou no dia letivo anterior (sexta → segunda)", () => {
-    const r = advanceFeedbackStreak({ feedbackStreak: 4, lastFeedbackDay: "2026-10-23" }, "2026-10-26", "2026-10-23");
-    expect(r.feedbackStreak).toBe(5);
-  });
-
-  it("feriado no meio não quebra: o dia anterior é o dia letivo anterior", () => {
-    // terça 03/11, com Finados (02/11) no meio: o dia letivo anterior é a sexta 30/10
-    const r = advanceFeedbackStreak({ feedbackStreak: 7, lastFeedbackDay: "2026-10-30" }, "2026-11-03", "2026-10-30");
-    expect(r.feedbackStreak).toBe(8);
-  });
-
-  it("recomeça em 1 se pulou um dia letivo", () => {
-    const r = advanceFeedbackStreak({ feedbackStreak: 4, lastFeedbackDay: "2026-10-21" }, "2026-10-26", "2026-10-23");
-    expect(r.feedbackStreak).toBe(1);
-  });
-
-  it("avaliar outro professor no mesmo dia não soma de novo", () => {
-    const r = advanceFeedbackStreak({ feedbackStreak: 2, lastFeedbackDay: "2026-10-26" }, "2026-10-26", "2026-10-23");
-    expect(r).toEqual({ feedbackStreak: 2, lastFeedbackDay: "2026-10-26", changed: false });
-  });
-
-  it("bônus só com todos os professores do dia avaliados, uma vez por dia", () => {
-    expect(earnsFeedbackBonus(2, 3, null, "2026-10-26")).toBe(false);
-    expect(earnsFeedbackBonus(3, 3, "2026-10-23", "2026-10-26")).toBe(true);
-    expect(earnsFeedbackBonus(3, 3, "2026-10-26", "2026-10-26")).toBe(false);
-    expect(earnsFeedbackBonus(0, 0, null, "2026-10-31")).toBe(false);
-  });
-
-  it("ofensiva exibida zera só depois de perder um dia letivo", () => {
-    const s = { feedbackStreak: 3, lastFeedbackDay: "2026-10-23" };
-    expect(currentFeedbackStreak(s, "2026-10-26", "2026-10-23")).toBe(3);
-    expect(currentFeedbackStreak(s, "2026-10-27", "2026-10-26")).toBe(0);
   });
 });
 

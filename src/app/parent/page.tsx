@@ -5,7 +5,6 @@ import { getActingUser } from "@/lib/session";
 import { classroomSchedule } from "@/lib/schedule-data";
 import { feedbackDay } from "@/lib/feedback-data";
 import { firstName } from "@/lib/game";
-import { isSchoolDay } from "@/lib/calendar";
 import { SchoolCalendar } from "@/components/shared/SchoolCalendar";
 import { EventList } from "@/components/shared/EventList";
 import { ReportCard } from "@/components/shared/ReportCard";
@@ -46,11 +45,6 @@ export default async function ParentPage({ searchParams }: { searchParams: Promi
     feedbackDay(child.id),
   ]);
   const pet = child.pet;
-  const feedbackDays = (
-    await db.lessonFeedback.findMany({ where: { studentId: child.id }, select: { day: true }, distinct: ["day"] })
-  )
-    .map((f) => f.day)
-    .filter((d) => isSchoolDay(d, feedback.calendar, feedback.lessonDays));
 
   return (
     <div>
@@ -97,7 +91,7 @@ export default async function ParentPage({ searchParams }: { searchParams: Promi
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                   <Stat label="XP total" value={pet?.xp ?? 0} />
                   <Stat label="Conquistas e superações" value={child._count.events} />
-                  <Stat label="Ofensiva de avaliações" value={`🔥 ${feedback.streak}`} hint="dias avaliando todos os professores" />
+                  <Stat label="Ofensiva de avaliações" value={`🔥 ${feedback.streak}`} hint="dias seguidos avaliando todas as aulas" />
                 </div>
               </div>
             ),
@@ -136,7 +130,7 @@ export default async function ParentPage({ searchParams }: { searchParams: Promi
                   calendar={feedback.calendar}
                   lessonWeekdays={feedback.lessonDays}
                   today={feedback.today}
-                  streakDays={feedbackDays}
+                  streakDays={feedback.completedDays}
                   streakLabel={`Dia da ofensiva de ${firstName(child.name)}`}
                  />
               </Card>

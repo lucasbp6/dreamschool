@@ -222,38 +222,10 @@ export function dayKey(date = new Date()): string {
 }
 
 // ---------- Ofensiva de avaliações ----------
-// A ofensiva sobe na primeira avaliação de cada dia letivo; avaliar todos os professores que deram aula
-// no dia rende ainda um bônus pequeno de XP só para o pet. Dias sem aula (fim de semana, feriado,
-// recesso, fora do período letivo) não mexem na ofensiva: o "dia anterior" é sempre o dia letivo anterior.
+// Regras de prazo e de dias completos em src/lib/feedback-rules.ts.
 
+/** Bônus de XP (só para o pet) ao completar a avaliação de todas as aulas de um dia letivo. */
 export const FEEDBACK_STREAK_XP = 3;
-
-export type FeedbackStreakState = { feedbackStreak: number; lastFeedbackDay: string | null };
-
-/**
- * Avança a ofensiva ao avaliar num dia letivo: continua se o aluno avaliou no dia letivo anterior,
- * senão recomeça em 1. Uma vez por dia (avaliar mais professores no mesmo dia não soma de novo).
- */
-export function advanceFeedbackStreak(
-  state: FeedbackStreakState,
-  today: string,
-  previousSchoolDay: string | null,
-): FeedbackStreakState & { changed: boolean } {
-  if (state.lastFeedbackDay === today) return { ...state, changed: false };
-  const continues = previousSchoolDay !== null && state.lastFeedbackDay === previousSchoolDay;
-  return { feedbackStreak: continues ? state.feedbackStreak + 1 : 1, lastFeedbackDay: today, changed: true };
-}
-
-/** Bônus de XP do dia: todos os professores com aula hoje avaliados, uma vez por dia. */
-export function earnsFeedbackBonus(rated: number, required: number, bonusDay: string | null, today: string) {
-  return required > 0 && rated >= required && bonusDay !== today;
-}
-
-/** Ofensiva exibida hoje: vale enquanto o último dia avaliado for hoje ou o dia letivo anterior. */
-export function currentFeedbackStreak(state: FeedbackStreakState, today: string, previousSchoolDay: string | null) {
-  if (state.lastFeedbackDay === today || state.lastFeedbackDay === previousSchoolDay) return state.feedbackStreak;
-  return 0;
-}
 
 // ---------- Boletim ----------
 

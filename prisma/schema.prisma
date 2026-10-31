@@ -62,17 +62,14 @@ model User {
 }
 
 model Pet {
-  id               String  @id @default(cuid())
-  petType          String // CAT | OWL | BEAR | BUNNY | FOX | DOG | DRAGON
-  petName          String
-  xp               Int     @default(0)
-  mood             String  @default("NEUTRAL") // HAPPY | NEUTRAL | TIRED
-  recoveryMission  String?
-  feedbackStreak   Int     @default(0) // ofensiva: dias seguidos avaliando todos os professores do dia
-  lastFeedbackDay  String? // YYYY-MM-DD do último dia letivo em que avaliou professores (ofensiva)
-  feedbackBonusDay String? // YYYY-MM-DD em que ganhou o bônus por avaliar todos os professores do dia
-  studentId        String  @unique
-  student          User    @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  id              String  @id @default(cuid())
+  petType         String // CAT | OWL | BEAR | BUNNY | FOX | DOG | DRAGON
+  petName         String
+  xp              Int     @default(0)
+  mood            String  @default("NEUTRAL") // HAPPY | NEUTRAL | TIRED
+  recoveryMission String?
+  studentId       String  @unique
+  student         User    @relation(fields: [studentId], references: [id], onDelete: Cascade)
 }
 
 model Event {
@@ -98,21 +95,25 @@ model ParentNote {
   student       User     @relation(fields: [studentId], references: [id], onDelete: Cascade)
 }
 
-// Avaliação de um professor por um aluno (uma por professor por dia).
+// Avaliação de uma aula (matéria numa data) por um aluno. Uma por matéria por data; pode ser feita
+// no dia da aula ou no dia seguinte. O professor fica gravado para o resumo e a lista anônima dele.
 model LessonFeedback {
-  id          String    @id @default(cuid())
-  stars       Int // 1 a 3
-  comment     String?
-  day         String // YYYY-MM-DD
-  createdAt   DateTime  @default(now())
-  studentId   String
-  student     User      @relation("StudentFeedbacks", fields: [studentId], references: [id], onDelete: Cascade)
-  teacherId   String
-  teacher     User      @relation("TeacherFeedbacks", fields: [teacherId], references: [id], onDelete: Cascade)
-  classroomId String
-  classroom   Classroom @relation(fields: [classroomId], references: [id], onDelete: Cascade)
+  id             String       @id @default(cuid())
+  stars          Int // 1 a 3
+  comment        String?
+  lessonDate     String // YYYY-MM-DD: data da aula avaliada
+  day            String // YYYY-MM-DD: data em que a avaliação foi feita
+  classSubjectId String
+  classSubject   ClassSubject @relation(fields: [classSubjectId], references: [id], onDelete: Cascade)
+  createdAt      DateTime     @default(now())
+  studentId      String
+  student        User         @relation("StudentFeedbacks", fields: [studentId], references: [id], onDelete: Cascade)
+  teacherId      String
+  teacher        User         @relation("TeacherFeedbacks", fields: [teacherId], references: [id], onDelete: Cascade)
+  classroomId    String
+  classroom      Classroom    @relation(fields: [classroomId], references: [id], onDelete: Cascade)
 
-  @@unique([studentId, teacherId, day])
+  @@unique([studentId, classSubjectId, lessonDate])
 }
 
 model FeedbackSummary {
@@ -139,16 +140,17 @@ model Subject {
 
 // Matéria oferecida a uma turma, com o professor responsável. Um professor pode ter várias turmas.
 model ClassSubject {
-  id          String         @id @default(cuid())
+  id          String           @id @default(cuid())
   classroomId String
-  classroom   Classroom      @relation(fields: [classroomId], references: [id], onDelete: Cascade)
+  classroom   Classroom        @relation(fields: [classroomId], references: [id], onDelete: Cascade)
   subjectId   String
-  subject     Subject        @relation(fields: [subjectId], references: [id])
+  subject     Subject          @relation(fields: [subjectId], references: [id])
   teacherId   String
-  teacher     User           @relation(fields: [teacherId], references: [id])
+  teacher     User             @relation(fields: [teacherId], references: [id])
   slots       ScheduleSlot[]
   attendances Attendance[]
   assessments Assessment[]
+  feedbacks   LessonFeedback[]
 
   @@unique([classroomId, subjectId])
 }

@@ -38,7 +38,7 @@ A ofensiva de avaliações depende das aulas do dia. Para apresentar num fim de 
 8. Em **Gestor → Cadastros**, crie uma turma, um professor e um aluno, e atribua matérias à turma (um professor pode estar em várias turmas).
 9. Em **Gestor → Grade horária**, monte a semana da nova turma. Tente colocar a Prof.ª Marina na segunda às 07:30: o conflito com o 4º Ano A é bloqueado.
 10. Veja a grade em cada perfil: Aluno e Pais (grade da turma) e Professor (grade de todas as turmas dele).
-11. Como **Aluno** (Lia Fernandes Costa), abra **Avaliar aulas** e avalie um professor com aula hoje: a ofensiva sobe na hora. Avaliando todos os professores do dia, o pet ganha +3 XP. Na aba **Calendário**, os dias da ofensiva aparecem com uma chama; feriados e recessos não alteram a ofensiva.
+11. Como **Aluno** (Lia Fernandes Costa), abra **Avaliar aulas**: aparecem as aulas de hoje e de ontem, por matéria. A ofensiva só sobe ao avaliar **todas** as aulas do dia (e o pet ganha +3 XP). Na aba **Calendário**, os dias completos aparecem com uma chama; feriados e recessos não alteram a ofensiva. Como **Professor**, a aba **Avaliações** mostra o resumo com IA e as avaliações individuais anônimas.
 12. Como **Professor**, use as abas **Chamada** (presença por matéria e dia) e **Notas** (crie uma avaliação e lance as notas). Veja o resultado no **Boletim** do Aluno e dos Pais.
 13. Como **Aluno**, abra **Ensinar o pet**, escolha um tema (ex.: Fotossíntese) e explique escrevendo ou pelo **microfone** (Chrome/Edge) — de propósito, cometa um erro ("a planta come terra"). O pet tira a dúvida com gentileza e traz a informação correta. Depois de 3 explicações, termine a aula: o pet resume o que aprendeu e ganha +5 XP.
 
@@ -54,6 +54,7 @@ Next.js 15 (App Router) + TypeScript + Tailwind CSS 4 + Lucide · Prisma 6 + SQL
 |---|---|
 | `src/lib/game.ts` | Regras puras de pontos, níveis, manutenção e sequência (testadas em `game.test.ts`) |
 | `src/lib/actions.ts` | Server actions que aplicam as regras no banco |
+| `src/lib/feedback-rules.ts` | Prazo de avaliação e ofensiva por dias completos (testado em `feedback-rules.test.ts`) |
 | `src/lib/calendar.ts` | Calendário letivo: dias letivos, feriados, recessos e dia letivo anterior (testado em `calendar.test.ts`) |
 | `src/lib/teacher-actions.ts` | Chamada e notas lançadas pelo professor |
 | `src/lib/feedback-data.ts` | Professores a avaliar no dia e estado da ofensiva |

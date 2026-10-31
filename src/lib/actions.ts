@@ -19,8 +19,6 @@ import {
   applyAttention,
   applyPositive,
   FEEDBACK_STREAK_XP,
-  advanceFeedbackStreak,
-  earnsFeedbackBonus,
   dayKey,
   type AttentionCategory,
   type Mood,
@@ -126,72 +124,64 @@ export async function saveParentNote(studentId: string, rawText: string, humaniz
 
 export type FeedbackResult = { ok: boolean; message: string };
 
-/** Avaliação de um professor específico. Completar todos os professores do dia avança a ofensiva (+XP só no pet). */
+/**
+ * Avaliação de uma aula (matéria numa data), feita no dia da aula ou no dia seguinte.
+ * A ofensiva só sobe quando todas as aulas daquele dia foram avaliadas; aí o pet também ganha o bônus.
+ */
 export async function submitLessonFeedback(
   studentId: string,
-  teacherId: string,
+  classSubjectId: string,
+  lessonDate: string,
   stars: number,
   comment: string,
 ): Promise<FeedbackResult> {
   const before = await feedbackDay(studentId);
-  const { student, today } = before;
-  const teacher = before.teachers.find((t) => t.id === teacherId);
-  if (!student.classroomId || !teacher) return { ok: false, message: "Escolha um professor da sua turma." };
-  if (teacher.ratedToday) return { ok: false, message: `Você já avaliou ${teacher.name} hoje. Volte amanhã! 💜` };
+  const { student } = before;
+  const group = before.days.find((d) => d.date === lessonDate);
+  const lesson = group?.lessons.find((l) => l.classSubjectId === classSubjectId);
+  if (!student.classroomId || !group || !lesson)
+    return { ok: false, message: "Essa aula não pode mais ser avaliada: o prazo é o dia da aula e o dia seguinte." };
+  if (lesson.rated) return { ok: false, message: `Você já avaliou a aula de ${lesson.subject} desse dia.` };
 
+  const cs = await db.classSubject.findUniqueOrThrow({ where: { id: classSubjectId } });
   await db.lessonFeedback.create({
     data: {
       stars: Math.min(3, Math.max(1, Math.round(stars))),
       comment: comment.trim() || null,
-      day: today,
+      lessonDate,
+      day: before.today,
+      classSubjectId,
+      teacherId: cs.teacherId,
       studentId,
-      teacherId,
       classroomId: student.classroomId,
     },
   });
 
+  const remaining = group.lessons.filter((l) => !l.rated && l.classSubjectId !== classSubjectId).length;
+  const which = lessonDate === before.today ? "de hoje" : "de ontem";
   const pet = student.pet;
-  const parts = [`Obrigado! Sua avaliação para ${teacher.name} foi enviada.`];
+  let message = `Obrigado! Sua avaliação de ${lesson.subject} foi enviada.`;
 
-  // Só dia letivo mexe na ofensiva; em feriado, recesso ou fim de semana a avaliação é salva e a ofensiva fica como está.
-  if (pet && before.schoolDay) {
-    const streak = advanceFeedbackStreak(pet, today, before.previousSchoolDay);
-    const ratedNow = before.ratedRequired + (teacher.hasLessonToday ? 1 : 0);
-    const bonus = earnsFeedbackBonus(ratedNow, before.required, pet.feedbackBonusDay, today);
-
-    if (streak.changed || bonus) {
-      await db.$transaction([
-        db.pet.update({
-          where: { id: pet.id },
-          data: {
-            feedbackStreak: streak.feedbackStreak,
-            lastFeedbackDay: streak.lastFeedbackDay,
-            ...(bonus ? { xp: { increment: FEEDBACK_STREAK_XP }, feedbackBonusDay: today } : {}),
-          },
-        }),
-        ...(bonus
-          ? [
-              db.event.create({
-                data: {
-                  type: "STREAK",
-                  category: "Ofensiva de avaliações",
-                  note: `Avaliou todos os professores do dia · ofensiva de ${streak.feedbackStreak} dia(s)`,
-                  xpDelta: FEEDBACK_STREAK_XP,
-                  studentId,
-                  classroomId: student.classroomId,
-                },
-              }),
-            ]
-          : []),
-      ]);
-    }
-    if (streak.changed) parts.push(`🔥 Ofensiva: ${streak.feedbackStreak} dia(s) seguidos!`);
-    if (bonus) parts.push(`Você avaliou todos os professores de hoje: +${FEEDBACK_STREAK_XP} XP para ${pet.petName}.`);
-  } else if (pet && !before.schoolDay) {
-    parts.push(`Hoje não é dia letivo (${before.noSchoolReason}), então a ofensiva não muda.`);
+  if (remaining > 0) {
+    message += ` Falta${remaining > 1 ? "m" : ""} ${remaining} aula${remaining > 1 ? "s" : ""} ${which} para a ofensiva subir.`;
+  } else if (pet) {
+    // Dia completo: acontece uma vez só por dia (cada aula só pode ser avaliada uma vez).
+    await db.$transaction([
+      db.pet.update({ where: { id: pet.id }, data: { xp: { increment: FEEDBACK_STREAK_XP } } }),
+      db.event.create({
+        data: {
+          type: "STREAK",
+          category: "Ofensiva de avaliações",
+          note: `Avaliou todas as aulas ${which}`,
+          xpDelta: FEEDBACK_STREAK_XP,
+          studentId,
+          classroomId: student.classroomId,
+        },
+      }),
+    ]);
+    const after = await feedbackDay(studentId);
+    message = `🔥 Você avaliou todas as aulas ${which}! Ofensiva: ${after.streak} dia(s) seguidos. +${FEEDBACK_STREAK_XP} XP para ${pet.petName}.`;
   }
-
-  const message = parts.join(" ");
   revalidateAll();
   return { ok: true, message };
 }
@@ -200,10 +190,19 @@ export async function submitLessonFeedback(
 export async function generateFeedbackSummary(classroomId: string, teacherId: string) {
   const [classroom, feedbacks] = await Promise.all([
     db.classroom.findUniqueOrThrow({ where: { id: classroomId } }),
-    db.lessonFeedback.findMany({ where: { classroomId, teacherId }, orderBy: { createdAt: "desc" }, take: 50 }),
+    db.lessonFeedback.findMany({
+      where: { classroomId, teacherId },
+      orderBy: { lessonDate: "desc" },
+      take: 50,
+      select: { stars: true, comment: true, classSubject: { select: { subject: { select: { name: true } } } } },
+    }),
   ]);
   if (feedbacks.length === 0) return { ok: false as const, message: "Ainda não há avaliações para você nesta turma." };
-  const { text, usedAi } = await summarizeFeedback(classroom.name, feedbacks);
+  // A matéria vai junto do comentário, para o resumo separar o que é de cada aula.
+  const { text, usedAi } = await summarizeFeedback(
+    classroom.name,
+    feedbacks.map((f) => ({ stars: f.stars, comment: f.comment && `[${f.classSubject.subject.name}] ${f.comment}` })),
+  );
   await db.feedbackSummary.create({ data: { classroomId, teacherId, text, feedbackCount: feedbacks.length } });
   revalidateAll();
   return { ok: true as const, usedAi };

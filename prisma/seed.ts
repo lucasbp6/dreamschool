@@ -3,7 +3,7 @@ import { PrismaClient } from "@prisma/client";
 import { now } from "../src/lib/clock";
 import { dayKey } from "../src/lib/game";
 import { validateSlot, type ExistingSlot } from "../src/lib/schedule";
-import { isSchoolDay, previousSchoolDay } from "../src/lib/calendar";
+import { isSchoolDay } from "../src/lib/calendar";
 import { CALENDAR } from "./calendar-2026";
 
 const prisma = new PrismaClient();
@@ -207,10 +207,9 @@ const COMMENTS = ["Adorei a atividade em grupo!", "A explicação foi rápida de
 
 /**
  * Chamadas e avaliações das últimas duas semanas, notas de duas avaliações por matéria e
- * a ofensiva de alguns alunos (que avaliaram todos os professores em todos os dias letivos).
+ * alunos com ofensiva (os de `streakers` avaliam todas as aulas de todos os dias letivos).
  */
 async function seedAcademics(classroomIds: string[], streakers: string[]) {
-  const today = dayKey(now());
   for (const classroomId of classroomIds) {
     const classSubjects = await prisma.classSubject.findMany({ where: { classroomId }, include: { slots: true } });
     const lessonDays = [...new Set(classSubjects.flatMap((cs) => cs.slots.map((s) => s.weekday)))];
@@ -230,19 +229,20 @@ async function seedAcademics(classroomIds: string[], streakers: string[]) {
           });
         }
       }
-      // Avaliações dos professores do dia.
-      const teachers = [...new Set(todays.map((cs) => cs.teacherId))];
+      // Avaliações das aulas do dia (uma por matéria). Quem está em `streakers` avalia todas as aulas.
       for (const [si, st] of students.entries()) {
         const always = streakers.includes(st.name);
-        for (const [ti, teacherId] of teachers.entries()) {
-          if (!always && (si + back + ti) % 3 !== 0) continue;
+        for (const [ci, cs] of todays.entries()) {
+          if (!always && (si + back + ci) % 3 !== 0) continue;
           await prisma.lessonFeedback.create({
             data: {
-              stars: 2 + ((si + ti + back) % 2),
-              comment: COMMENTS[(si + ti + back) % COMMENTS.length],
+              stars: 2 + ((si + ci + back) % 2),
+              comment: COMMENTS[(si + ci + back) % COMMENTS.length],
+              lessonDate: day,
               day,
+              classSubjectId: cs.id,
+              teacherId: cs.teacherId,
               studentId: st.id,
-              teacherId,
               classroomId,
             },
           });
@@ -265,19 +265,6 @@ async function seedAcademics(classroomIds: string[], streakers: string[]) {
       }
     }
 
-    // Quem avaliou todos os dias letivos tem a ofensiva acesa até o último dia letivo.
-    const lastSchoolDay = previousSchoolDay(today, CALENDAR, lessonDays);
-    const schoolDaysInWindow = Array.from({ length: 14 }, (_, i) => dayKey(daysAgo(i + 1))).filter((d) =>
-      isSchoolDay(d, CALENDAR, lessonDays),
-    ).length;
-    for (const st of students) {
-      if (st.pet && streakers.includes(st.name)) {
-        await prisma.pet.update({
-          where: { id: st.pet.id },
-          data: { feedbackStreak: schoolDaysInWindow, lastFeedbackDay: lastSchoolDay, feedbackBonusDay: lastSchoolDay },
-        });
-      }
-    }
   }
 }
 

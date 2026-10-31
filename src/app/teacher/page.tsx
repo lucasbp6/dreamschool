@@ -29,6 +29,7 @@ import { ParentNoteComposer } from "./ParentNoteComposer";
 import { FeedbackSummaryPanel } from "./FeedbackSummaryPanel";
 import { AttendanceSheet } from "./AttendanceSheet";
 import { GradeBook } from "./GradeBook";
+import { AnonymousFeedbackList, type AnonymousFeedback } from "./AnonymousFeedbackList";
 
 export default async function TeacherPage({ searchParams }: { searchParams: Promise<{ turma?: string }> }) {
   const teacher = await getActingUser("TEACHER");
@@ -54,7 +55,16 @@ export default async function TeacherPage({ searchParams }: { searchParams: Prom
           include: {
             students: { include: { pet: true }, orderBy: { name: "asc" } },
             events: { include: { student: true }, orderBy: { createdAt: "desc" }, take: 10 },
-            feedbacks: { where: { teacherId: teacher.id } },
+            feedbacks: {
+              where: { teacherId: teacher.id },
+              select: {
+                id: true,
+                stars: true,
+                comment: true,
+                lessonDate: true,
+                classSubject: { select: { subject: { select: { name: true } } } },
+              },
+            },
             summaries: { where: { teacherId: teacher.id }, orderBy: { createdAt: "desc" }, take: 1 },
           },
         })
@@ -80,6 +90,12 @@ export default async function TeacherPage({ searchParams }: { searchParams: Prom
 
   const students = classroom.students.map((s) => ({ id: s.id, name: s.name }));
   const subjects = mine.map((a) => ({ id: a.id, name: a.subject.name, weekdays: a.slots.map((s) => s.weekday) }));
+  // Avaliações anônimas: só estrelas, comentário, matéria e data da aula. O id (cuid) carrega o horário de
+  // criação, então não sai do servidor; a ordem dentro de cada data é embaralhada de forma estável.
+  const anonymous: AnonymousFeedback[] = classroom.feedbacks
+    .map((f) => ({ key: shuffleKey(f.id), stars: f.stars, comment: f.comment, lessonDate: f.lessonDate, subject: f.classSubject.subject.name }))
+    .sort((a, b) => b.lessonDate.localeCompare(a.lessonDate) || a.key - b.key)
+    .map((f) => ({ stars: f.stars, comment: f.comment, lessonDate: f.lessonDate, subject: f.subject }));
   const avgStars = classroom.feedbacks.length
     ? classroom.feedbacks.reduce((s, f) => s + f.stars, 0) / classroom.feedbacks.length
     : null;
@@ -259,6 +275,10 @@ export default async function TeacherPage({ searchParams }: { searchParams: Prom
                       : null
                   }
                 />
+                <div className="mt-6 border-t border-line pt-5">
+                  <h3 className="mb-3 text-lg font-extrabold text-ink">Avaliações individuais (anônimas)</h3>
+                  <AnonymousFeedbackList key={classroom.id} items={anonymous} />
+                </div>
               </Card>
             ),
           },
@@ -266,4 +286,11 @@ export default async function TeacherPage({ searchParams }: { searchParams: Prom
       />
     </div>
   );
+}
+
+/** Número estável e sem relação com a ordem de envio, para embaralhar avaliações do mesmo dia. */
+function shuffleKey(id: string) {
+  let h = 2166136261;
+  for (const ch of id) h = Math.imul(h ^ ch.charCodeAt(0), 16777619);
+  return h >>> 0;
 }

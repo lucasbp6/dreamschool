@@ -4,7 +4,6 @@ import { getActingUser } from "@/lib/session";
 import { classroomSchedule } from "@/lib/schedule-data";
 import { feedbackDay } from "@/lib/feedback-data";
 import { firstName } from "@/lib/game";
-import { isSchoolDay } from "@/lib/calendar";
 import { SchoolCalendar } from "@/components/shared/SchoolCalendar";
 import { EventList } from "@/components/shared/EventList";
 import { ReportCard } from "@/components/shared/ReportCard";
@@ -42,13 +41,7 @@ export default async function StudentPage() {
     }),
   ]);
   const activeMentor = mentorSessions.find((s) => !s.endedAt) ?? null;
-  // Dias da ofensiva no calendário: dias letivos em que o aluno avaliou algum professor.
-  const feedbackDays = (
-    await db.lessonFeedback.findMany({ where: { studentId: student.id }, select: { day: true }, distinct: ["day"] })
-  )
-    .map((f) => f.day)
-    .filter((d) => isSchoolDay(d, feedback.calendar, feedback.lessonDays));
-  const pending = feedback.required - feedback.ratedRequired;
+  const pending = feedback.pending;
 
   return (
     <div>
@@ -111,12 +104,8 @@ export default async function StudentPage() {
               <LessonFeedbackForm
                 studentId={student.id}
                 petName={pet.petName}
-                teachers={feedback.teachers}
+                days={feedback.days}
                 streak={feedback.streak}
-                required={feedback.required}
-                ratedRequired={feedback.ratedRequired}
-                streakCountedToday={feedback.streakCountedToday}
-                bonusToday={feedback.bonusToday}
                 noSchoolReason={feedback.noSchoolReason}
               />
             ),
@@ -183,8 +172,8 @@ export default async function StudentPage() {
                   calendar={feedback.calendar}
                   lessonWeekdays={feedback.lessonDays}
                   today={feedback.today}
-                  streakDays={feedbackDays}
-                  streakLabel="Dia da ofensiva (avaliou os professores)"
+                  streakDays={feedback.completedDays}
+                  streakLabel="Dia da ofensiva (avaliou todas as aulas)"
                  />
               </Card>
             ),

@@ -1,10 +1,10 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { CheckCircle2, Flame, Star } from "lucide-react";
+import { CheckCircle2, Clock, Flame, Star } from "lucide-react";
 import { submitLessonFeedback } from "@/lib/actions";
 import { FEEDBACK_STREAK_XP } from "@/lib/game";
-import type { FeedbackTeacher } from "@/lib/feedback-data";
+import type { FeedbackDayGroup } from "@/lib/feedback-data";
 import { Card, CardTitle } from "@/components/shared/ui";
 
 const LABELS = ["", "Pode melhorar", "Foi legal", "Amei!"];
@@ -12,42 +12,30 @@ const LABELS = ["", "Pode melhorar", "Foi legal", "Amei!"];
 type Props = {
   studentId: string;
   petName: string;
-  teachers: FeedbackTeacher[];
+  /** Aulas que ainda podem ser avaliadas, agrupadas por dia (hoje e ontem). */
+  days: FeedbackDayGroup[];
   streak: number;
-  required: number;
-  ratedRequired: number;
-  /** A ofensiva já subiu hoje (o aluno avaliou alguém neste dia letivo). */
-  streakCountedToday: boolean;
-  bonusToday: boolean;
   /** Motivo de hoje não ser dia letivo (ex.: "feriado: Finados"), ou null. */
   noSchoolReason: string | null;
 };
 
-export function LessonFeedbackForm({
-  studentId,
-  petName,
-  teachers,
-  streak,
-  required,
-  ratedRequired,
-  streakCountedToday,
-  bonusToday,
-  noSchoolReason,
-}: Props) {
-  const [teacherId, setTeacherId] = useState<string | null>(null);
+export function LessonFeedbackForm({ studentId, petName, days, streak, noSchoolReason }: Props) {
+  const [selected, setSelected] = useState<{ date: string; classSubjectId: string } | null>(null);
   const [stars, setStars] = useState(0);
   const [comment, setComment] = useState("");
   const [result, setResult] = useState<{ ok: boolean; message: string } | null>(null);
   const [pending, startTransition] = useTransition();
-  const selected = teachers.find((t) => t.id === teacherId);
+  const lesson =
+    selected &&
+    days.find((d) => d.date === selected.date)?.lessons.find((l) => l.classSubjectId === selected.classSubjectId);
 
   const submit = () =>
     startTransition(async () => {
-      if (!teacherId) return;
-      const r = await submitLessonFeedback(studentId, teacherId, stars, comment);
+      if (!selected) return;
+      const r = await submitLessonFeedback(studentId, selected.classSubjectId, selected.date, stars, comment);
       setResult(r);
       if (r.ok) {
-        setTeacherId(null);
+        setSelected(null);
         setStars(0);
         setComment("");
       }
@@ -61,78 +49,89 @@ export function LessonFeedbackForm({
           <span className={`text-6xl font-extrabold tabular-nums ${streak > 0 ? "text-attention" : "text-muted"}`}>{streak}</span>
           <span className="font-bold text-ink">{streak === 1 ? "dia seguido" : "dias seguidos"}</span>
         </div>
-        {required > 0 ? (
-          <>
-            <p className="mt-3 text-sm font-bold text-ink">
-              {streakCountedToday
-                ? "Hoje já conta para a sua ofensiva!"
-                : "Avalie um professor de hoje para a ofensiva subir."}
-            </p>
-            <p className="mt-2 text-sm text-ink">
-              Hoje: <strong>{ratedRequired} de {required}</strong> professores avaliados.
-            </p>
-            <div className="mt-2 flex gap-1.5" aria-hidden>
-              {Array.from({ length: required }, (_, i) => (
-                <span key={i} className={`h-3 flex-1 rounded-full ${i < ratedRequired ? "bg-attention" : "border border-line bg-surface"}`} />
-              ))}
+        <p className="mt-3 text-sm text-ink">
+          A ofensiva sobe quando você avalia <strong>todas as aulas de um dia</strong>. Cada aula pode ser avaliada no
+          dia dela ou no dia seguinte. Dia completo vale +{FEEDBACK_STREAK_XP} XP para {petName}.
+        </p>
+        {days.map((d) => {
+          const done = d.lessons.filter((l) => l.rated).length;
+          const complete = done === d.lessons.length;
+          return (
+            <div key={d.date} className="mt-4">
+              <div className="flex items-center justify-between text-sm">
+                <span className="font-bold text-ink">{d.label}</span>
+                <span className={`font-bold tabular-nums ${complete ? "text-success" : "text-ink"}`}>
+                  {complete ? "Completo ✓" : `${done} de ${d.lessons.length}`}
+                </span>
+              </div>
+              <div className="mt-1 flex gap-1.5" aria-hidden>
+                {d.lessons.map((l) => (
+                  <span
+                    key={l.classSubjectId}
+                    className={`h-3 flex-1 rounded-full ${l.rated ? "bg-attention" : "border border-line bg-surface"}`}
+                  />
+                ))}
+              </div>
             </div>
-            <p className="mt-3 text-sm text-muted">
-              {bonusToday
-                ? `Dia completo! ${petName} ganhou +${FEEDBACK_STREAK_XP} XP. Volte no próximo dia de aula para manter a ofensiva.`
-                : `Avaliando todos os professores que deram aula hoje, ${petName} ganha +${FEEDBACK_STREAK_XP} XP de bônus.`}
-            </p>
-          </>
-        ) : (
-          <p className="mt-3 text-sm text-muted">
-            Hoje não é dia letivo{noSchoolReason ? ` (${noSchoolReason})` : ""}, então a ofensiva fica guardadinha até o
-            próximo dia de aula. Você ainda pode avaliar, mas a ofensiva não muda.
+          );
+        })}
+        {noSchoolReason && (
+          <p className="mt-4 text-sm text-muted">
+            Hoje não é dia letivo ({noSchoolReason}), então a ofensiva fica guardadinha até o próximo dia de aula.
           </p>
         )}
       </Card>
 
       <Card className="lg:col-span-2">
-        <CardTitle icon={<Star size={20} className="text-brand" aria-hidden />}>Quem você quer avaliar?</CardTitle>
-        {teachers.length === 0 ? (
-          <p className="text-sm text-muted">Sua turma ainda não tem professores cadastrados.</p>
+        <CardTitle icon={<Star size={20} className="text-brand" aria-hidden />}>Qual aula você quer avaliar?</CardTitle>
+        {days.length === 0 ? (
+          <p className="text-sm text-muted">Não há aulas de hoje nem de ontem para avaliar. Volte no próximo dia de aula!</p>
         ) : (
-          <div role="radiogroup" aria-label="Professor" className="grid gap-2 sm:grid-cols-2">
-            {teachers.map((t) => {
-              const active = t.id === teacherId;
-              return (
-                <button
-                  key={t.id}
-                  type="button"
-                  role="radio"
-                  aria-checked={active}
-                  disabled={t.ratedToday || pending}
-                  onClick={() => {
-                    setTeacherId(t.id);
-                    setResult(null);
-                  }}
-                  className={`rounded-2xl border-2 p-3 text-left transition disabled:cursor-not-allowed ${
-                    active ? "border-brand bg-brand-soft" : "border-line bg-surface-2 hover:border-brand"
-                  } ${t.ratedToday ? "opacity-60" : ""}`}
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="font-extrabold text-ink">{t.name}</span>
-                    {t.ratedToday ? (
-                      <span className="inline-flex items-center gap-1 text-xs font-bold text-success">
-                        <CheckCircle2 size={14} aria-hidden /> Avaliado hoje
-                      </span>
-                    ) : (
-                      t.hasLessonToday && (
-                        <span className="rounded-full bg-attention-soft px-2 text-xs font-bold text-attention">Aula hoje</span>
-                      )
-                    )}
-                  </div>
-                  <div className="text-sm text-muted">{t.subjects.join(", ")}</div>
-                </button>
-              );
-            })}
+          <div className="space-y-4">
+            {days.map((d) => (
+              <section key={d.date} aria-label={d.label}>
+                <h3 className="mb-2 text-sm font-extrabold text-ink">{d.label}</h3>
+                <div role="radiogroup" aria-label={`Aulas de ${d.label}`} className="grid gap-2 sm:grid-cols-2">
+                  {d.lessons.map((l) => {
+                    const active = selected?.date === d.date && selected.classSubjectId === l.classSubjectId;
+                    return (
+                      <button
+                        key={l.classSubjectId}
+                        type="button"
+                        role="radio"
+                        aria-checked={active}
+                        disabled={l.rated || pending}
+                        onClick={() => {
+                          setSelected({ date: d.date, classSubjectId: l.classSubjectId });
+                          setResult(null);
+                        }}
+                        className={`rounded-2xl border-2 p-3 text-left transition disabled:cursor-not-allowed ${
+                          active ? "border-brand bg-brand-soft" : "border-line bg-surface-2 hover:border-brand"
+                        } ${l.rated ? "opacity-60" : ""}`}
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="font-extrabold text-ink">{l.subject}</span>
+                          {l.rated ? (
+                            <span className="inline-flex items-center gap-1 text-xs font-bold text-success">
+                              <CheckCircle2 size={14} aria-hidden /> Avaliada
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 text-xs font-bold text-muted tabular-nums">
+                              <Clock size={12} aria-hidden /> {l.times.join(", ")}
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-sm text-muted">{l.teacherName}</div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </section>
+            ))}
           </div>
         )}
 
-        {selected && (
+        {lesson && (
           <form
             className="mt-4 space-y-3 rounded-2xl border border-line bg-surface-2 p-4 text-sm"
             onSubmit={(e) => {
@@ -140,7 +139,9 @@ export function LessonFeedbackForm({
               submit();
             }}
           >
-            <p className="font-bold text-ink">Como foi a aula de {selected.name}?</p>
+            <p className="font-bold text-ink">
+              Como foi a aula de {lesson.subject} com {lesson.teacherName}?
+            </p>
             <div role="radiogroup" aria-label="Estrelas" className="flex gap-2">
               {[1, 2, 3].map((n) => (
                 <button
@@ -158,7 +159,7 @@ export function LessonFeedbackForm({
             </div>
             {stars > 0 && <p className="font-bold text-ink">{LABELS[stars]}</p>}
             <label className="block font-bold text-muted">
-              Quer contar mais? (opcional)
+              Quer contar mais? (opcional — o professor lê o comentário, mas não sabe quem escreveu)
               <textarea
                 value={comment}
                 onChange={(e) => setComment(e.target.value)}
