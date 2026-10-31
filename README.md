@@ -35,13 +35,14 @@ A ofensiva de avaliações depende das aulas do dia. Para apresentar num fim de 
 5. Troque para **Pais** e veja o recado e a jornada do filho.
 6. Como **Aluno**, avalie a aula; volte ao Professor e gere o **resumo com IA**.
 7. Como **Gestor**, veja o engajamento de todas as turmas.
-8. Em **Gestor → Cadastros**, crie uma turma, um professor e um aluno, e atribua matérias à turma (um professor pode estar em várias turmas).
-9. Em **Gestor → Grade horária**, monte a semana da nova turma. Tente colocar a Prof.ª Marina na segunda às 07:30: o conflito com o 4º Ano A é bloqueado.
-10. Veja a grade em cada perfil: Aluno e Pais (grade da turma) e Professor (grade de todas as turmas dele).
-11. Como **Aluno** (Lia Fernandes Costa), abra **Avaliar aulas**: aparecem as aulas de hoje e de ontem, por matéria. A ofensiva só sobe ao avaliar **todas** as aulas do dia (e o pet ganha +3 XP). Na aba **Calendário**, os dias completos aparecem com uma chama; feriados e recessos não alteram a ofensiva. Como **Professor**, a aba **Avaliações** mostra o resumo com IA e as avaliações individuais anônimas.
-12. Como **Pais**, use a aba **Mensagens** para escrever a um professor ou à gestão; como **Professor** (aba Mensagens) ou **Gestor** (Mensagens), responda. Como **Aluno**, veja o pet lembrando dos cadernos do dia em **Meu mundo**.
-13. Como **Professor**, use as abas **Chamada** (presença por matéria e dia) e **Notas** (crie uma avaliação e lance as notas). Veja o resultado no **Boletim** do Aluno e dos Pais.
-14. Como **Aluno**, abra **Ensinar o pet**, escolha um tema (ex.: Fotossíntese) e explique escrevendo ou pelo **microfone** (Chrome/Edge) — de propósito, cometa um erro ("a planta come terra"). O pet tira a dúvida com gentileza e traz a informação correta. Depois de 3 explicações, termine a aula: o pet resume o que aprendeu, ganha +5 XP e a aula vira uma página do **caderno de estudos** do aluno com o pet (logo abaixo), onde o aluno também escreve a própria anotação.
+8. Veja o **Ranking das turmas** (aba Ranking do aluno, aba Turma do professor, Pet e turma dos pais e visão geral do gestor), no total ou só na semana.
+9. Em **Gestor → Cadastros**, crie uma turma, um professor e um aluno, e atribua matérias à turma (um professor pode estar em várias turmas).
+10. Em **Gestor → Grade horária**, monte a semana da nova turma. Tente colocar a Prof.ª Marina na segunda às 07:30: o conflito com o 4º Ano A é bloqueado.
+11. Veja a grade em cada perfil: Aluno e Pais (grade da turma) e Professor (grade de todas as turmas dele).
+12. Como **Aluno** (Lia Fernandes Costa), abra **Avaliar aulas**: aparecem as aulas de hoje e de ontem, por matéria. A ofensiva só sobe ao avaliar **todas** as aulas do dia (e o pet ganha +3 XP). Na aba **Calendário**, os dias completos aparecem com uma chama; feriados e recessos não alteram a ofensiva. Como **Professor**, a aba **Avaliações** mostra o resumo com IA e as avaliações individuais anônimas.
+13. Como **Pais**, use a aba **Mensagens** para escrever a um professor ou à gestão; como **Professor** (aba Mensagens) ou **Gestor** (Mensagens), responda. Como **Aluno**, veja o pet lembrando dos cadernos do dia em **Meu mundo**.
+14. Como **Professor**, use as abas **Chamada** (presença por matéria e dia) e **Notas** (crie uma avaliação e lance as notas). Veja o resultado no **Boletim** do Aluno e dos Pais.
+15. Como **Aluno**, abra **Ensinar o pet**, escolha um tema (ex.: Fotossíntese) e explique escrevendo ou pelo **microfone** (Chrome/Edge) — de propósito, cometa um erro ("a planta come terra"). O pet tira a dúvida com gentileza e traz a informação correta. Depois de 3 explicações, termine a aula: o pet resume o que aprendeu, ganha +5 XP e a aula vira uma página do **caderno de estudos** do aluno com o pet (logo abaixo), onde o aluno também escreve a própria anotação.
 
 Para trocar as ilustrações das construções, edite as imagens de referência e rode `powershell -ExecutionPolicy Bypass -File scripts/art/cutout.ps1` (Windows).
 

@@ -9,6 +9,7 @@ Plataforma web gamificada para o ensino básico conectando Alunos, Professores, 
   2. `CASTLE` (Castelo): Primeira Muralha -> Forte de Pedra -> Castelo Real.
   3. `SPACE_BASE` (Estação Espacial): Plataforma de Lançamento -> Foguete em Montagem -> Foguete Estelar.
   4. `OBSERVATORY` (Observatório): Fundação -> Cúpula em Obras -> Observatório Estelar.
+- **Ranking das turmas:** a pontuação de cada turma são os tijolinhos — **Geral** (acumulados) e **Esta semana** (ganhos nos últimos 7 dias). Empates dividem a posição. Pódio com a arte da construção de cada turma e lista completa; a turma de quem está vendo fica destacada com quantos tijolinhos faltam para subir (`src/lib/ranking.ts`). Aparece na aba **Ranking** do aluno, na aba Turma do professor, em Pet e turma dos pais e na visão geral do gestor.
 - **Progresso por Tijolinhos (`bricks`):** Os tijolinhos acumulados nunca diminuem.
   - Nível 1: 0–99 tijolinhos | Nível 2: 100–299 tijolinhos | Nível 3: 300+ tijolinhos.
 

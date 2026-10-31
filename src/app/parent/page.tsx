@@ -6,6 +6,8 @@ import { classroomSchedule } from "@/lib/schedule-data";
 import { feedbackDay } from "@/lib/feedback-data";
 import { firstName } from "@/lib/game";
 import { SchoolCalendar } from "@/components/shared/SchoolCalendar";
+import { ClassRanking } from "@/components/shared/ClassRanking";
+import { loadClassRanking } from "@/lib/ranking-data";
 import { MessagesPanel } from "@/components/shared/MessagesPanel";
 import { loadConversations, parentRecipients, unreadCount } from "@/lib/messages-data";
 import { EventList } from "@/components/shared/EventList";
@@ -42,11 +44,12 @@ export default async function ParentPage({ searchParams }: { searchParams: Promi
     );
   }
 
-  const [schedule, feedback, conversations, recipients] = await Promise.all([
+  const [schedule, feedback, conversations, recipients, ranking] = await Promise.all([
     child.classroomId ? classroomSchedule(child.classroomId) : [],
     feedbackDay(child.id),
     loadConversations(parent.id, "PARENT"),
     parentRecipients(parent.id),
+    loadClassRanking(parent.schoolId),
   ]);
   const unread = unreadCount(conversations);
   const pet = child.pet;
@@ -98,6 +101,7 @@ export default async function ParentPage({ searchParams }: { searchParams: Promi
                   <Stat label="Conquistas e superações" value={child._count.events} />
                   <Stat label="Ofensiva de avaliações" value={`🔥 ${feedback.streak}`} hint="dias seguidos avaliando todas as aulas" />
                 </div>
+                <ClassRanking overall={ranking.overall} weekly={ranking.weekly} highlightId={child.classroomId ?? undefined} />
               </div>
             ),
           },

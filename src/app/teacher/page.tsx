@@ -19,6 +19,8 @@ import { getActingUser } from "@/lib/session";
 import { teacherSchedule } from "@/lib/schedule-data";
 import { loadCalendar } from "@/lib/calendar-data";
 import { SchoolCalendar } from "@/components/shared/SchoolCalendar";
+import { ClassRanking } from "@/components/shared/ClassRanking";
+import { loadClassRanking } from "@/lib/ranking-data";
 import { MessagesPanel } from "@/components/shared/MessagesPanel";
 import { loadConversations, unreadCount } from "@/lib/messages-data";
 import { EventList } from "@/components/shared/EventList";
@@ -53,7 +55,7 @@ export default async function TeacherPage({ searchParams }: { searchParams: Prom
   const teachingWeekdays = [...new Set(assignments.flatMap((a) => a.slots.map((s) => s.weekday)))].sort();
   const conversations = await loadConversations(teacher.id, "TEACHER");
   const unread = unreadCount(conversations);
-  const [classroom, schedule, attendance, assessments, calendar] = await Promise.all([
+  const [classroom, schedule, attendance, assessments, calendar, ranking] = await Promise.all([
     selectedId
       ? db.classroom.findUnique({
           where: { id: selectedId },
@@ -82,6 +84,7 @@ export default async function TeacherPage({ searchParams }: { searchParams: Prom
       include: { grades: { select: { studentId: true, score: true } } },
     }),
     loadCalendar(teacher.schoolId),
+    loadClassRanking(teacher.schoolId),
   ]);
 
   if (!classroom) {
@@ -191,6 +194,7 @@ export default async function TeacherPage({ searchParams }: { searchParams: Prom
                     </Card>
                   </div>
                 </div>
+                <ClassRanking overall={ranking.overall} weekly={ranking.weekly} highlightId={classroom.id} />
               </div>
             ),
           },

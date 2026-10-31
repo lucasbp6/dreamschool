@@ -1,6 +1,8 @@
 import { BarChart3, School } from "lucide-react";
 import { db } from "@/lib/db";
 import { getActingUser } from "@/lib/session";
+import { loadClassRanking } from "@/lib/ranking-data";
+import { ClassRanking } from "@/components/shared/ClassRanking";
 import { BuildingView } from "@/components/shared/BuildingView";
 import { Card, CardTitle, PageHeader, Stat, pluralize } from "@/components/shared/ui";
 
@@ -20,6 +22,7 @@ export default async function ManagerPage() {
     },
   });
 
+  const ranking = await loadClassRanking(manager.schoolId);
   const allEvents = classrooms.flatMap((c) => c.events);
   const count = (type: string) => allEvents.filter((e) => e.type === type).length;
   const attention = count("ATTENTION");
@@ -49,6 +52,10 @@ export default async function ManagerPage() {
           value={recovery}
           hint={attention ? `${Math.round((recovery / attention) * 100)}% das missões concluídas` : "—"}
         />
+      </div>
+
+      <div className="mt-5">
+        <ClassRanking overall={ranking.overall} weekly={ranking.weekly} />
       </div>
 
       <Card className="mt-5">

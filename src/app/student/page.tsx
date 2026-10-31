@@ -1,4 +1,4 @@
-import { CalendarDays, CalendarRange, Flame, GraduationCap, History, MessagesSquare, Sparkles, Star, Target } from "lucide-react";
+import { CalendarDays, CalendarRange, Flame, GraduationCap, History, MessagesSquare, Sparkles, Star, Target, Trophy } from "lucide-react";
 import { db } from "@/lib/db";
 import { getActingUser } from "@/lib/session";
 import { classroomSchedule } from "@/lib/schedule-data";
@@ -7,6 +7,8 @@ import { firstName } from "@/lib/game";
 import type { NotebookNotes } from "@/lib/mentor";
 import { addDays, currentOrNextSchoolDay, weekdayOf } from "@/lib/calendar";
 import { SchoolCalendar } from "@/components/shared/SchoolCalendar";
+import { ClassRanking } from "@/components/shared/ClassRanking";
+import { loadClassRanking } from "@/lib/ranking-data";
 import { EventList } from "@/components/shared/EventList";
 import { ReportCard } from "@/components/shared/ReportCard";
 import { ScheduleGrid } from "@/components/shared/ScheduleGrid";
@@ -32,7 +34,7 @@ export default async function StudentPage() {
     return <PageHeader title={`Olá, ${firstName(student.name)}!`} subtitle="Seu pet ainda está chegando." />;
   }
 
-  const [schedule, feedback, classSubjects, mentorSessions] = await Promise.all([
+  const [schedule, feedback, classSubjects, mentorSessions, ranking] = await Promise.all([
     classroomSchedule(classroom.id),
     feedbackDay(student.id),
     db.classSubject.findMany({ where: { classroomId: classroom.id }, include: { subject: true }, orderBy: { subject: { name: "asc" } } }),
@@ -43,6 +45,7 @@ export default async function StudentPage() {
       take: 200,
       include: { messages: { where: { session: { endedAt: null } }, orderBy: { createdAt: "asc" } } },
     }),
+    loadClassRanking(student.schoolId),
   ]);
   const activeMentor = mentorSessions.find((s) => !s.endedAt) ?? null;
   const notebookPages = mentorSessions
@@ -127,6 +130,12 @@ export default async function StudentPage() {
                 )}
               </div>
             ),
+          },
+          {
+            id: "ranking",
+            label: "Ranking",
+            icon: <Trophy size={16} aria-hidden />,
+            content: <ClassRanking overall={ranking.overall} weekly={ranking.weekly} highlightId={classroom.id} />,
           },
           {
             id: "avaliar",
