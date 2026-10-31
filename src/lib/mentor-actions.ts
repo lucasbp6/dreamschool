@@ -4,7 +4,7 @@
 // /api/mentor/[sessionId], em streaming.
 import { revalidatePath } from "next/cache";
 import { db } from "./db";
-import { complete } from "./ai";
+import { MENTOR_MODEL, MENTOR_TIMEOUT_MS, complete, warmUp } from "./ai";
 import { now } from "./clock";
 import { dayKey, firstName } from "./game";
 import { getActingUser } from "./session";
@@ -20,6 +20,8 @@ export async function startMentorSession(subjectName: string, topic: string): Pr
   if (!pet) return { ok: false, message: "Você ainda não tem um pet." };
   if (!subjectName.trim()) return { ok: false, message: "Escolha a matéria." };
   if (cleanTopic.length < 3) return { ok: false, message: "Conte qual é o tema da aula (ex.: Frações)." };
+
+  warmUp(MENTOR_MODEL);
 
   // Uma aula aberta por vez: as anteriores sem fim são encerradas.
   await db.mentorSession.updateMany({ where: { studentId: student.id, endedAt: null }, data: { endedAt: now() } });
@@ -56,7 +58,12 @@ export async function endMentorSession(sessionId: string): Promise<MentorEnd> {
   const explanations = history.filter((m) => m.role === "STUDENT").length;
   const recap =
     explanations > 0
-      ? ((await complete("recap do pet", recapMessages(ctx, history), { temperature: 0.5, maxTokens: 220 })) ??
+      ? ((await complete("recap do pet", recapMessages(ctx, history), {
+          temperature: 0.5,
+          maxTokens: 220,
+          model: MENTOR_MODEL,
+          timeoutMs: MENTOR_TIMEOUT_MS,
+        })) ??
         fallbackRecap(ctx))
       : `Tudo bem, ${firstName(ctx.studentName)}! Quando quiser, é só me ensinar sobre ${ctx.topic}.`;
 

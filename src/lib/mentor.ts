@@ -32,9 +32,13 @@ function persona(ctx: MentorContext) {
     `- Você é o aprendiz, não o professor. Responda em no máximo 3 frases curtas.\n` +
     `- Se a explicação estiver correta, comemore de forma breve e faça UMA pergunta curiosa que ajude ${mentor} a ` +
     `aprofundar ou dar um exemplo.\n` +
-    `- Se houver um erro ou algo incompleto, NÃO diga que está errado de forma dura. Mostre a dúvida com gentileza ` +
-    `("Hmm, fiquei confuso... eu tinha ouvido que..."), diga a informação correta em uma frase e peça para ${mentor} ` +
-    `conferir com você.\n` +
+    `- Se houver um erro, NÃO diga que está errado de forma dura. Mostre a dúvida com gentileza ` +
+    `("Hmm, fiquei confuso... eu tinha ouvido que..."), e SEMPRE diga a informação correta de forma clara e completa ` +
+    `em uma frase (com o número, o nome ou a regra certa, e um exemplo simples se ajudar). Não dê só pistas. ` +
+    `Depois peça para ${mentor} conferir com você.\n` +
+    `- Se a explicação estiver certa, não invente que falta algo.\n` +
+    `- As explicações podem ter sido faladas e transcritas automaticamente: ignore erros de digitação, pontuação ou ` +
+    `palavras trocadas pela transcrição e corrija só erros de conteúdo.\n` +
     `- Nunca invente fatos. Se não tiver certeza, diga que vocês podem perguntar ao professor.\n` +
     `- Fique no tema da aula. Se a conversa fugir do tema ou tiver algo inadequado ou dados pessoais, volte ` +
     `gentilmente para "${ctx.topic}".\n` +

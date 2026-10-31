@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
-import { GraduationCap, Send, Sparkles } from "lucide-react";
+import { GraduationCap, Mic, MicOff, Send, Sparkles } from "lucide-react";
 import { endMentorSession, startMentorSession, type MentorEnd } from "@/lib/mentor-actions";
 import { MENTOR_MAX_CHARS, MENTOR_MIN_EXPLANATIONS, MENTOR_XP } from "@/lib/mentor";
 import { PetArt } from "@/components/shared/PetArt";
 import { Card, CardTitle } from "@/components/shared/ui";
+import { useSpeechToText } from "@/components/shared/useSpeechToText";
 
-type Message = { id: string; role: "STUDENT" | "PET"; content: string };
+type Message = { id: string; role: "STUDENT" | "PET"; content: string; viaAudio?: boolean };
 type Session = { id: string; subjectName: string; topic: string; messages: Message[] };
 type Past = { id: string; subjectName: string; topic: string; recap: string | null; createdAt: string };
 
@@ -45,8 +46,8 @@ export function MentorChat({ subjects, pet, active, past }: Props) {
               Hoje você é o professor de {pet.petName}!
             </CardTitle>
             <p className="mb-4 text-sm text-muted">
-              Escolha um tema da aula e explique com as suas palavras. {pet.petName} vai fazer perguntas e, se algo
-              ficar confuso, vocês descobrem juntos o jeito certo. Explique pelo menos {MENTOR_MIN_EXPLANATIONS} vezes
+              Escolha um tema da aula e explique com as suas palavras, escrevendo ou falando no microfone.{" "}
+              {pet.petName} vai fazer perguntas e, se algo ficar confuso, vocês descobrem juntos o jeito certo. Explique pelo menos {MENTOR_MIN_EXPLANATIONS} vezes
               para ganhar +{MENTOR_XP} XP (uma vez por dia).
             </p>
             <form
@@ -131,7 +132,12 @@ function ChatRoom({
   const [text, setText] = useState("");
   const [streaming, setStreaming] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [viaAudio, setViaAudio] = useState(false);
   const [ending, startEnding] = useTransition();
+  const speech = useSpeechToText((t) => {
+    setText(t);
+    setViaAudio(true);
+  });
   const bottom = useRef<HTMLDivElement>(null);
   const explanations = messages.filter((m) => m.role === "STUDENT").length;
 
@@ -142,16 +148,23 @@ function ChatRoom({
   const send = async () => {
     const content = text.trim();
     if (!content || streaming) return;
+    speech.stop();
+    const spoken = viaAudio;
+    setViaAudio(false);
     setText("");
     setError(null);
     setStreaming(true);
     const petId = `pet-${Date.now()}`;
-    setMessages((m) => [...m, { id: `me-${Date.now()}`, role: "STUDENT", content }, { id: petId, role: "PET", content: "" }]);
+    setMessages((m) => [
+      ...m,
+      { id: `me-${Date.now()}`, role: "STUDENT", content, viaAudio: spoken },
+      { id: petId, role: "PET", content: "" },
+    ]);
     try {
       const res = await fetch(`/api/mentor/${session.id}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: content }),
+        body: JSON.stringify({ text: content, viaAudio: spoken }),
       });
       if (!res.ok || !res.body) throw new Error(await res.text());
       const reader = res.body.getReader();
@@ -199,7 +212,8 @@ function ChatRoom({
           ) : (
             <div key={m.id} className="flex justify-end">
               <div className="max-w-[80%] rounded-2xl rounded-br-sm bg-brand px-3 py-2 text-on-brand">
-                <span className="sr-only">Você: </span>
+                <span className="sr-only">Você{m.viaAudio ? " (falado)" : ""}: </span>
+                {m.viaAudio && <Mic size={14} className="mr-1 inline align-[-2px] opacity-80" aria-hidden />}
                 {m.content}
               </div>
             </div>
@@ -219,7 +233,10 @@ function ChatRoom({
           <span className="sr-only">Sua explicação para {pet.petName}</span>
           <textarea
             value={text}
-            onChange={(e) => setText(e.target.value)}
+            onChange={(e) => {
+              setText(e.target.value);
+              if (!e.target.value) setViaAudio(false);
+            }}
             onKeyDown={(e) => {
               if (e.key === "Enter" && !e.shiftKey) {
                 e.preventDefault();
@@ -228,10 +245,27 @@ function ChatRoom({
             }}
             rows={2}
             maxLength={MENTOR_MAX_CHARS}
-            placeholder={`Explique para ${pet.petName} com as suas palavras…`}
+            placeholder={
+              speech.listening ? "Pode falar, estou ouvindo…" : `Escreva ou fale sua explicação para ${pet.petName}…`
+            }
             className="w-full resize-none rounded-xl border border-line bg-surface p-2 text-ink"
           />
         </label>
+        {speech.supported && (
+          <button
+            type="button"
+            onClick={() => (speech.listening ? speech.stop() : speech.start(text))}
+            disabled={streaming}
+            aria-pressed={speech.listening}
+            aria-label={speech.listening ? "Parar de ouvir" : "Falar a explicação"}
+            title={speech.listening ? "Parar de ouvir" : "Falar a explicação"}
+            className={`rounded-full p-3 transition disabled:opacity-50 ${
+              speech.listening ? "animate-pulse bg-attention text-on-brand" : "border border-line bg-surface text-brand hover:bg-brand-soft"
+            }`}
+          >
+            {speech.listening ? <MicOff size={18} aria-hidden /> : <Mic size={18} aria-hidden />}
+          </button>
+        )}
         <button
           type="submit"
           disabled={streaming || !text.trim()}
@@ -241,7 +275,15 @@ function ChatRoom({
           <Send size={18} aria-hidden />
         </button>
       </form>
-      {error && <p className="mt-2 text-sm font-bold text-attention">{error}</p>}
+      {speech.listening && (
+        <p role="status" className="mt-2 text-sm font-bold text-attention">
+          Ouvindo… quando terminar, toque no microfone, confira o texto e envie.
+        </p>
+      )}
+      {!speech.supported && (
+        <p className="mt-2 text-xs text-muted">Para falar em vez de escrever, use o Chrome, o Edge ou o Safari.</p>
+      )}
+      {(error || speech.error) && <p className="mt-2 text-sm font-bold text-attention">{error ?? speech.error}</p>}
 
       <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-sm">
         <span className="text-muted">

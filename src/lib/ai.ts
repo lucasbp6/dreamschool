@@ -5,7 +5,16 @@ import OpenAI from "openai";
 import type { ChatCompletionMessageParam } from "openai/resources/chat/completions";
 
 const MODEL = process.env.FEATHERLESS_MODEL || "Qwen/Qwen2.5-7B-Instruct";
+/**
+ * A mentoria ("Ensinar o pet") usa um modelo maior: na avaliação (prompts/008) o 32B não errou conteúdo
+ * e seguiu melhor o papel de aprendiz; o 7B chegou a ensinar uma regra errada de frações.
+ */
+export const MENTOR_MODEL = process.env.FEATHERLESS_MENTOR_MODEL || "Qwen/Qwen2.5-32B-Instruct";
+/** O 32B pode levar ~18 s quando está "frio"; a mentoria aquece o modelo ao começar a aula e espera mais. */
+export const MENTOR_TIMEOUT_MS = 30_000;
 const AI_TIMEOUT_MS = 15_000;
+
+type CallOptions = { temperature?: number; maxTokens?: number; model?: string; timeoutMs?: number };
 
 let cached: OpenAI | null | undefined;
 function client() {
@@ -20,18 +29,21 @@ function client() {
 async function complete(
   label: string,
   messages: ChatCompletionMessageParam[],
-  opts: { temperature?: number; maxTokens?: number } = {},
+  opts: CallOptions = {},
 ): Promise<string | null> {
   const ai = client();
   if (!ai) return null;
   const t0 = Date.now();
   try {
-    const res = await ai.chat.completions.create({
-      model: MODEL,
-      temperature: opts.temperature ?? 0.6,
-      max_tokens: opts.maxTokens ?? 400,
-      messages,
-    });
+    const res = await ai.chat.completions.create(
+      {
+        model: opts.model ?? MODEL,
+        temperature: opts.temperature ?? 0.6,
+        max_tokens: opts.maxTokens ?? 400,
+        messages,
+      },
+      { timeout: opts.timeoutMs ?? AI_TIMEOUT_MS },
+    );
     console.info(`[ai] ${label}: ${Date.now() - t0} ms`);
     return res.choices[0]?.message?.content?.trim() || null;
   } catch (err) {
@@ -44,19 +56,22 @@ async function complete(
 export async function streamCompletion(
   label: string,
   messages: ChatCompletionMessageParam[],
-  opts: { temperature?: number; maxTokens?: number } = {},
+  opts: CallOptions = {},
 ): Promise<AsyncIterable<string> | null> {
   const ai = client();
   if (!ai) return null;
   const t0 = Date.now();
   try {
-    const stream = await ai.chat.completions.create({
-      model: MODEL,
-      temperature: opts.temperature ?? 0.7,
-      max_tokens: opts.maxTokens ?? 250,
-      messages,
-      stream: true,
-    });
+    const stream = await ai.chat.completions.create(
+      {
+        model: opts.model ?? MODEL,
+        temperature: opts.temperature ?? 0.7,
+        max_tokens: opts.maxTokens ?? 250,
+        messages,
+        stream: true,
+      },
+      { timeout: opts.timeoutMs ?? AI_TIMEOUT_MS },
+    );
     return (async function* () {
       try {
         for await (const chunk of stream) {
@@ -72,6 +87,17 @@ export async function streamCompletion(
     console.error(`[ai] ${label} (stream) falhou após ${Date.now() - t0} ms:`, err instanceof Error ? err.message : err);
     return null;
   }
+}
+
+/** Pedido mínimo, sem esperar a resposta, para o modelo sair do estado "frio" antes de ser usado. */
+export function warmUp(model: string) {
+  const ai = client();
+  if (!ai) return;
+  const t0 = Date.now();
+  ai.chat.completions
+    .create({ model, max_tokens: 1, messages: [{ role: "user", content: "oi" }] }, { timeout: MENTOR_TIMEOUT_MS, maxRetries: 0 })
+    .then(() => console.info(`[ai] aquecimento ${model}: ${Date.now() - t0} ms`))
+    .catch(() => {});
 }
 
 export type AiResult = { text: string; usedAi: boolean };

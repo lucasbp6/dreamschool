@@ -13,7 +13,7 @@ Requisitos: Node.js 20+.
 
 ```bash
 npm install
-# crie um .env com DATABASE_URL="file:./dev.db" (e, opcionalmente, FEATHERLESS_API_KEY, FEATHERLESS_MODEL e DEMO_TODAY)
+# crie um .env com DATABASE_URL="file:./dev.db" (e, opcionalmente, FEATHERLESS_API_KEY, FEATHERLESS_MODEL, FEATHERLESS_MENTOR_MODEL e DEMO_TODAY)
 npm run db:setup              # cria o banco SQLite e carrega os dados de demonstração
 npm run dev                   # http://localhost:3000
 ```
@@ -38,7 +38,7 @@ A ofensiva de avaliações depende das aulas do dia. Para apresentar num fim de 
 10. Veja a grade em cada perfil: Aluno e Pais (grade da turma) e Professor (grade de todas as turmas dele).
 11. Como **Aluno** (Lia Fernandes Costa), abra **Avaliar aulas**, escolha cada professor com aula hoje e avalie: ao completar todos, a ofensiva sobe e o pet ganha +3 XP.
 12. Como **Professor**, use as abas **Chamada** (presença por matéria e dia) e **Notas** (crie uma avaliação e lance as notas). Veja o resultado no **Boletim** do Aluno e dos Pais.
-13. Como **Aluno**, abra **Ensinar o pet**, escolha um tema (ex.: Fotossíntese) e explique — de propósito, cometa um erro ("a planta come terra"). O pet tira a dúvida com gentileza e traz a informação correta. Depois de 3 explicações, termine a aula: o pet resume o que aprendeu e ganha +5 XP.
+13. Como **Aluno**, abra **Ensinar o pet**, escolha um tema (ex.: Fotossíntese) e explique escrevendo ou pelo **microfone** (Chrome/Edge) — de propósito, cometa um erro ("a planta come terra"). O pet tira a dúvida com gentileza e traz a informação correta. Depois de 3 explicações, termine a aula: o pet resume o que aprendeu e ganha +5 XP.
 
 Para trocar as ilustrações das construções, edite as imagens de referência e rode `powershell -ExecutionPolicy Bypass -File scripts/art/cutout.ps1` (Windows).
 
@@ -64,6 +64,7 @@ Next.js 15 (App Router) + TypeScript + Tailwind CSS 4 + Lucide · Prisma 6 + SQL
 | `prisma/` | Schema, migração e seed |
 | `public/art/` | Ilustrações das construções e da tela inicial (recortadas das referências) |
 | `scripts/art/` | Script que recorta as referências JPEG em PNGs transparentes |
+| `scripts/eval/` | Avaliação dos modelos na mentoria (resultado em `docs/avaliacao-modelo-mentoria.md`) |
 
 ## Scripts
 

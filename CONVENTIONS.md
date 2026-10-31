@@ -52,9 +52,11 @@ Plataforma web gamificada para o ensino básico conectando Alunos, Professores, 
 - Na aba **Ensinar o pet**, o aluno escolhe a matéria e um tema da aula e explica com as próprias palavras. O pet é um **aprendiz curioso**: responde em até 3 frases simples, comemora acertos com uma pergunta que aprofunda o tema e, quando há um erro, mostra a dúvida com gentileza, diz a informação correta e pede para o aluno conferir. Nunca inventa fatos e volta ao tema se a conversa fugir dele.
 - Ao **terminar a aula**, o pet conta o que aprendeu (corrigindo o que ficou errado) e dá uma dica de revisão. Com pelo menos **3 explicações**, a aula vale **+5 XP** para o pet, uma vez por dia (evento "Mentoria").
 - As conversas ficam salvas (`MentorSession`, `MentorMessage`); as respostas do pet chegam em streaming pela rota `/api/mentor/[sessionId]`. Prompts e regras em `src/lib/mentor.ts`.
+- **Explicação por voz ou texto:** o botão de microfone usa o ditado do navegador (Web Speech API, pt-BR; Chrome, Edge e Safari). O texto aparece enquanto o aluno fala e ele pode revisar antes de enviar; mensagens faladas ficam marcadas (`viaAudio`) e o pet ignora erros de transcrição. No Chrome/Edge o áudio é transcrito por um serviço online do navegador.
+- **Modelo:** a mentoria usa `Qwen/Qwen2.5-32B-Instruct` (`FEATHERLESS_MENTOR_MODEL`), escolhido na avaliação de `docs/avaliacao-modelo-mentoria.md`; o restante segue no 7B. O 32B é aquecido quando a aula começa e tem limite de 30 s.
 
 ### H. Chamadas de IA
-- Toda chamada à Featherless tem limite de **15 s** (1 nova tentativa); se estourar ou falhar, a tela usa um texto alternativo e avisa. O tempo de cada chamada aparece no log do servidor (`[ai] ...`). O modelo pode ser trocado com `FEATHERLESS_MODEL`.
+- Toda chamada à Featherless tem limite de **15 s** (30 s na mentoria; 1 nova tentativa); se estourar ou falhar, a tela usa um texto alternativo e avisa. O tempo de cada chamada aparece no log do servidor (`[ai] ...`). O modelo pode ser trocado com `FEATHERLESS_MODEL`.
 
 ## 2. Stack Tecnológica (MVP Hackathon)
 - **Framework:** Next.js 14+ (App Router) com TypeScript + Tailwind CSS + Lucide Icons.

@@ -1,13 +1,13 @@
 // Mensagem do aluno-mentor para o pet. Salva a explicação e devolve a resposta do pet em streaming
 // (texto puro), salvando-a ao final. Sem IA disponível, responde com uma fala pronta.
 import { db } from "@/lib/db";
-import { streamCompletion } from "@/lib/ai";
+import { MENTOR_MODEL, MENTOR_TIMEOUT_MS, streamCompletion } from "@/lib/ai";
 import { MENTOR_MAX_CHARS, fallbackReply, petReplyMessages } from "@/lib/mentor";
 import { loadOwnSession } from "@/lib/mentor-data";
 
 export async function POST(request: Request, { params }: { params: Promise<{ sessionId: string }> }) {
   const { sessionId } = await params;
-  const body = (await request.json().catch(() => null)) as { text?: unknown } | null;
+  const body = (await request.json().catch(() => null)) as { text?: unknown; viaAudio?: unknown } | null;
   const text = typeof body?.text === "string" ? body.text.trim().slice(0, MENTOR_MAX_CHARS) : "";
   if (!text) return new Response("Escreva sua explicação.", { status: 400 });
 
@@ -15,13 +15,15 @@ export async function POST(request: Request, { params }: { params: Promise<{ ses
   if (!loaded) return new Response("Aula não encontrada.", { status: 404 });
   if (loaded.session.endedAt) return new Response("Esta aula já terminou.", { status: 409 });
 
-  await db.mentorMessage.create({ data: { sessionId, role: "STUDENT", content: text } });
+  await db.mentorMessage.create({ data: { sessionId, role: "STUDENT", content: text, viaAudio: body?.viaAudio === true } });
   const history = [...loaded.history, { role: "STUDENT" as const, content: text }];
   const explanations = history.filter((m) => m.role === "STUDENT").length;
 
   const stream = await streamCompletion("resposta do pet", petReplyMessages(loaded.ctx, history), {
     temperature: 0.7,
     maxTokens: 200,
+    model: MENTOR_MODEL,
+    timeoutMs: MENTOR_TIMEOUT_MS,
   });
   const encoder = new TextEncoder();
 

@@ -214,6 +214,7 @@ model MentorMessage {
   role      String // STUDENT | PET
   content   String
   usedAi    Boolean       @default(true)
+  viaAudio  Boolean       @default(false) // explicação falada (transcrita pelo navegador)
   createdAt DateTime      @default(now())
   sessionId String
   session   MentorSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)

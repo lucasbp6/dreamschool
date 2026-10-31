@@ -128,6 +128,7 @@ export default async function StudentPage() {
                       id: m.id,
                       role: m.role as "STUDENT" | "PET",
                       content: m.content,
+                      viaAudio: m.viaAudio,
                     })),
                   }
                 }

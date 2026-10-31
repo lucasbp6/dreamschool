@@ -30,6 +30,8 @@ describe("mentor do pet", () => {
     expect(system.content).toMatch(/aprendiz/);
     expect(system.content).toMatch(/informação correta/);
     expect(system.content).toMatch(/Fotossíntese/);
+    expect(system.content).toMatch(/Não dê só pistas/);
+    expect(system.content).toMatch(/transcritas automaticamente/);
   });
 
   it("aluno vira 'user' e pet vira 'assistant', só com o histórico recente", () => {
