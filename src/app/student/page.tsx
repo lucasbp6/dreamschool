@@ -1,10 +1,12 @@
-import { Hammer, History, Star, Target, Users } from "lucide-react";
+import { CalendarDays, Hammer, History, Star, Target, Users } from "lucide-react";
 import { db } from "@/lib/db";
 import { getActingUser } from "@/lib/session";
+import { classroomSchedule } from "@/lib/schedule-data";
 import { MOOD_INFO, PET_INFO, petLevel, type Mood, type PetType } from "@/lib/game";
 import { PetAvatar } from "@/components/shared/PetAvatar";
 import { BuildingView } from "@/components/shared/BuildingView";
 import { EventList } from "@/components/shared/EventList";
+import { ScheduleGrid } from "@/components/shared/ScheduleGrid";
 import { Badge, Card, CardTitle, PageHeader, ProgressBar } from "@/components/shared/ui";
 import { LessonFeedbackForm } from "./LessonFeedbackForm";
 
@@ -21,6 +23,7 @@ export default async function StudentPage() {
   const { pet, classroom } = student;
   if (!pet || !classroom) return <PageHeader title={`Olá, ${student.name}!`} subtitle="Seu pet ainda está chegando." />;
 
+  const schedule = await classroomSchedule(classroom.id);
   const lvl = petLevel(pet.xp);
   const mood = MOOD_INFO[pet.mood as Mood] ?? MOOD_INFO.NEUTRAL;
   const species = PET_INFO[pet.petType as PetType]?.label ?? "Pet";
@@ -74,6 +77,11 @@ export default async function StudentPage() {
               </p>
             </Card>
           )}
+
+          <Card>
+            <CardTitle icon={<CalendarDays size={20} className="text-brand" aria-hidden />}>Minha grade horária</CardTitle>
+            <ScheduleGrid slots={schedule} />
+          </Card>
 
           <Card>
             <CardTitle icon={<Users size={20} className="text-brand" aria-hidden />}>Pets da turma</CardTitle>

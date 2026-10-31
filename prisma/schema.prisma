@@ -15,6 +15,7 @@ model School {
   name       String
   classrooms Classroom[]
   users      User[]
+  subjects   Subject[]
 }
 
 model Classroom {
@@ -27,8 +28,7 @@ model Classroom {
   lastStreakDay     String? // YYYY-MM-DD do último dia contado no streak
   schoolId          String
   school            School            @relation(fields: [schoolId], references: [id])
-  teacherId         String?           @unique
-  teacher           User?             @relation("ClassTeacher", fields: [teacherId], references: [id])
+  classSubjects     ClassSubject[]
   students          User[]            @relation("ClassStudents")
   events            Event[]
   feedbacks         LessonFeedback[]
@@ -43,7 +43,7 @@ model User {
   school          School           @relation(fields: [schoolId], references: [id])
   classroomId     String?
   classroom       Classroom?       @relation("ClassStudents", fields: [classroomId], references: [id])
-  teaching        Classroom?       @relation("ClassTeacher")
+  teaching        ClassSubject[]
   parentId        String?
   parent          User?            @relation("ParentChildren", fields: [parentId], references: [id])
   children        User[]           @relation("ParentChildren")
@@ -105,4 +105,39 @@ model FeedbackSummary {
   createdAt     DateTime  @default(now())
   classroomId   String
   classroom     Classroom @relation(fields: [classroomId], references: [id], onDelete: Cascade)
+}
+
+// Matéria do catálogo da escola (ex.: Matemática).
+model Subject {
+  id            String         @id @default(cuid())
+  name          String
+  schoolId      String
+  school        School         @relation(fields: [schoolId], references: [id])
+  classSubjects ClassSubject[]
+
+  @@unique([schoolId, name])
+}
+
+// Matéria oferecida a uma turma, com o professor responsável. Um professor pode ter várias turmas.
+model ClassSubject {
+  id          String         @id @default(cuid())
+  classroomId String
+  classroom   Classroom      @relation(fields: [classroomId], references: [id], onDelete: Cascade)
+  subjectId   String
+  subject     Subject        @relation(fields: [subjectId], references: [id])
+  teacherId   String
+  teacher     User           @relation(fields: [teacherId], references: [id])
+  slots       ScheduleSlot[]
+
+  @@unique([classroomId, subjectId])
+}
+
+// Aula na grade horária semanal da turma.
+model ScheduleSlot {
+  id             String       @id @default(cuid())
+  weekday        Int // 1 = segunda ... 6 = sábado
+  startTime      String // "HH:MM"
+  endTime        String // "HH:MM"
+  classSubjectId String
+  classSubject   ClassSubject @relation(fields: [classSubjectId], references: [id], onDelete: Cascade)
 }

@@ -17,6 +17,7 @@ next-env.d.ts
 
 # Variáveis de Ambiente e Chaves (Supabase + Featherless + Claude)
 .env
+.env*
 .env.local
 .env.development.local
 .env.test.local

@@ -81,3 +81,8 @@ export function PageHeader({ title, subtitle }: { title: ReactNode; subtitle?: R
     </div>
   );
 }
+
+/** "1 aluno", "3 alunos". */
+export function pluralize(n: number, singular: string, plural: string) {
+  return `${n} ${n === 1 ? singular : plural}`;
+}

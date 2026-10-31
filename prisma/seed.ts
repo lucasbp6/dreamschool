@@ -1,5 +1,6 @@
 // Dados de demonstração: a demo já começa com turmas, pets em níveis diferentes e histórico.
 import { PrismaClient } from "@prisma/client";
+import { validateSlot, type ExistingSlot } from "../src/lib/schedule";
 
 const prisma = new PrismaClient();
 
@@ -10,6 +11,9 @@ function daysAgo(n: number) {
 }
 
 async function main() {
+  await prisma.scheduleSlot.deleteMany();
+  await prisma.classSubject.deleteMany();
+  await prisma.subject.deleteMany();
   await prisma.feedbackSummary.deleteMany();
   await prisma.lessonFeedback.deleteMany();
   await prisma.parentNote.deleteMany();
@@ -26,6 +30,7 @@ async function main() {
   await user("Ana Gestora", "MANAGER");
   const profMarina = await user("Prof.ª Marina", "TEACHER");
   const profCarlos = await user("Prof. Carlos", "TEACHER");
+  const profJulia = await user("Prof.ª Júlia", "TEACHER");
   const maeJoao = await user("Cláudia (mãe do João)", "PARENT");
   const paiLia = await user("Roberto (pai da Lia)", "PARENT");
 
@@ -37,7 +42,6 @@ async function main() {
       maintenanceNeeded: 5,
       streak: 4,
       schoolId: school.id,
-      teacherId: profMarina.id,
     },
   });
   const space = await prisma.classroom.create({
@@ -47,7 +51,6 @@ async function main() {
       bricks: 60,
       streak: 2,
       schoolId: school.id,
-      teacherId: profCarlos.id,
     },
   });
 
@@ -115,6 +118,31 @@ async function main() {
     }
   }
 
+  await seedSchedule(school.id, [
+    {
+      room: castle,
+      // Professor responsável por cada matéria nesta turma.
+      subjects: { Matemática: profMarina, Ciências: profMarina, Português: profCarlos, Artes: profJulia, "Educação Física": profJulia },
+      // Por horário (linha), a matéria de cada dia de segunda a sexta.
+      grid: [
+        ["Matemática", "Ciências", "Matemática", "Ciências", "Matemática"],
+        ["Português", "Português", "Português", "Português", "Português"],
+        ["Artes", "Educação Física", "Artes", "Educação Física", "Artes"],
+        ["Ciências", "Matemática", "Ciências", "Matemática", "Ciências"],
+      ],
+    },
+    {
+      room: space,
+      subjects: { Português: profCarlos, História: profCarlos, Matemática: profMarina, Ciências: profJulia, Artes: profJulia, "Educação Física": profJulia },
+      grid: [
+        ["Português", "História", "Português", "História", "Português"],
+        ["Ciências", "Artes", "Educação Física", "Ciências", "Artes"],
+        ["Matemática", "Matemática", "Matemática", "Matemática", "Matemática"],
+        ["Educação Física", "Ciências", "Artes", "Educação Física", "Ciências"],
+      ],
+    },
+  ]);
+
   const castleStudents = await prisma.user.findMany({ where: { classroomId: castle.id } });
   const comments = ["Adorei o jogo de frações!", "A explicação foi rápida demais.", null];
   for (const [i, st] of castleStudents.entries()) {
@@ -123,7 +151,51 @@ async function main() {
     });
   }
 
-  console.log("Seed concluído: escola, 2 turmas, 6 alunos, pais, professores e gestor.");
+  console.log("Seed concluído: escola, 2 turmas com grade horária, 3 professores, 6 alunos, pais e gestor.");
+}
+
+const PERIODS = [
+  ["07:30", "08:20"],
+  ["08:20", "09:10"],
+  ["09:30", "10:20"],
+  ["10:20", "11:10"],
+];
+
+type ScheduleSeed = {
+  room: { id: string; name: string };
+  subjects: Record<string, { id: string; name: string }>;
+  grid: string[][];
+};
+
+async function seedSchedule(schoolId: string, plans: ScheduleSeed[]) {
+  const names = [...new Set(plans.flatMap((p) => Object.keys(p.subjects)))];
+  const subjects = new Map<string, string>();
+  for (const name of names) {
+    const s = await prisma.subject.create({ data: { name, schoolId } });
+    subjects.set(name, s.id);
+  }
+
+  const placed: ExistingSlot[] = [];
+  for (const { room, subjects: teachers, grid } of plans) {
+    const classSubjects = new Map<string, string>();
+    for (const [name, teacher] of Object.entries(teachers)) {
+      const cs = await prisma.classSubject.create({
+        data: { classroomId: room.id, subjectId: subjects.get(name)!, teacherId: teacher.id },
+      });
+      classSubjects.set(name, cs.id);
+    }
+    for (const [period, row] of grid.entries()) {
+      for (const [day, name] of row.entries()) {
+        const [startTime, endTime] = PERIODS[period];
+        const teacher = teachers[name];
+        const slot = { weekday: day + 1, startTime, endTime };
+        const conflict = validateSlot({ ...slot, classroomId: room.id, teacherId: teacher.id }, placed);
+        if (conflict) throw new Error(`Seed com conflito: ${conflict}`);
+        placed.push({ ...slot, classroomId: room.id, classroomName: room.name, teacherId: teacher.id, teacherName: teacher.name, subjectName: name });
+        await prisma.scheduleSlot.create({ data: { ...slot, classSubjectId: classSubjects.get(name)! } });
+      }
+    }
+  }
 }
 
 main()

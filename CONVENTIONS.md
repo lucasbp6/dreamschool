@@ -32,6 +32,12 @@ Plataforma web gamificada para o ensino básico conectando Alunos, Professores, 
 - **Humanizador para os Pais:** O professor escreve uma nota curta/rápida (ex: "João conversou muito e não fez o dever") e a IA reescreve de forma empática, construtiva e pedagógica para os pais.
 - **Resumo para o Professor:** Os alunos avaliam a aula (1 a 3 estrelas + comentário opcional) e a IA gera um resumo executivo para o professor ajustar sua didática.
 
+### E. Cadastros e Grade Horária
+- **Gestor** cadastra turmas (nome + tema da construção), professores e alunos (turma, pet e responsável opcional — reaproveita um responsável existente pelo nome ou cria um novo).
+- **Matérias da turma (`ClassSubject`):** cada turma tem várias matérias, cada uma com um professor. Os alunos cursam todas as matérias da sua turma. Um professor pode dar aula em várias turmas (as turmas dele são as turmas onde tem matéria).
+- **Grade horária (`ScheduleSlot`):** o gestor monta a semana de cada turma (dia, início e fim em `HH:MM`). São bloqueadas aulas sobrepostas na mesma turma e professor em duas turmas no mesmo horário (regras em `src/lib/schedule.ts`).
+- **Todos veem sua grade:** aluno e pais veem a grade da turma; o professor vê a grade consolidada de todas as suas turmas; o gestor edita a de cada turma.
+
 ## 2. Stack Tecnológica (MVP Hackathon)
 - **Framework:** Next.js 14+ (App Router) com TypeScript + Tailwind CSS + Lucide Icons.
 - **Banco de Dados:** SQLite local com Prisma ORM (`prisma/schema.prisma`).

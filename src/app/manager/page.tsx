@@ -2,7 +2,7 @@ import { BarChart3, School } from "lucide-react";
 import { db } from "@/lib/db";
 import { getActingUser } from "@/lib/session";
 import { BuildingView } from "@/components/shared/BuildingView";
-import { Card, CardTitle, PageHeader, Stat } from "@/components/shared/ui";
+import { Card, CardTitle, PageHeader, Stat, pluralize } from "@/components/shared/ui";
 
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -13,7 +13,7 @@ export default async function ManagerPage() {
     where: { schoolId: manager.schoolId },
     orderBy: { name: "asc" },
     include: {
-      teacher: true,
+      classSubjects: { include: { teacher: true } },
       students: { include: { pet: true } },
       events: { select: { type: true, createdAt: true } },
       feedbacks: { select: { stars: true } },
@@ -29,7 +29,8 @@ export default async function ManagerPage() {
   const rows = classrooms.map((c) => {
     const weekPositive = c.events.filter((e) => e.type !== "ATTENTION" && e.createdAt >= since).length;
     const avg = c.feedbacks.length ? c.feedbacks.reduce((s, f) => s + f.stars, 0) / c.feedbacks.length : null;
-    return { c, weekPositive, perStudent: c.students.length ? weekPositive / c.students.length : 0, avg };
+    const teachers = [...new Set(c.classSubjects.map((cs) => cs.teacher.name))].sort();
+    return { c, weekPositive, perStudent: c.students.length ? weekPositive / c.students.length : 0, avg, teachers };
   });
   const maxPerStudent = Math.max(...rows.map((r) => r.perStudent), 1);
 
@@ -58,7 +59,7 @@ export default async function ManagerPage() {
             <li
               key={c.id}
               className="grid grid-cols-[7rem_1fr_3.5rem] items-center gap-3 text-sm"
-              title={`${c.name}: ${weekPositive} conquistas para ${c.students.length} alunos`}
+              title={`${c.name}: ${weekPositive} conquistas para ${pluralize(c.students.length, "aluno", "alunos")}`}
             >
               <span className="truncate font-bold text-ink">{c.name}</span>
               <div className="h-6 rounded-r bg-surface-2">
@@ -75,11 +76,11 @@ export default async function ManagerPage() {
       </Card>
 
       <div className="mt-5 grid gap-5 md:grid-cols-2">
-        {rows.map(({ c, avg }) => (
+        {rows.map(({ c, avg, teachers }) => (
           <Card key={c.id}>
             <CardTitle
               icon={<School size={20} className="text-sky" aria-hidden />}
-              aside={<span className="text-sm text-muted">{c.teacher?.name}</span>}
+              aside={<span className="text-right text-sm text-muted">{teachers.join(", ") || "Sem professores"}</span>}
             >
               {c.name}
             </CardTitle>

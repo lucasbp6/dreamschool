@@ -1,10 +1,12 @@
-import { Hammer, History, Mail } from "lucide-react";
+import { CalendarDays, Hammer, History, Mail } from "lucide-react";
 import { db } from "@/lib/db";
 import { getActingUser } from "@/lib/session";
+import { classroomSchedule } from "@/lib/schedule-data";
 import { MOOD_INFO, PET_INFO, petLevel, type Mood, type PetType } from "@/lib/game";
 import { PetAvatar } from "@/components/shared/PetAvatar";
 import { BuildingView } from "@/components/shared/BuildingView";
 import { EventList } from "@/components/shared/EventList";
+import { ScheduleGrid } from "@/components/shared/ScheduleGrid";
 import { Badge, Card, CardTitle, PageHeader, ProgressBar, Stat } from "@/components/shared/ui";
 
 const fmt = new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "long" });
@@ -22,8 +24,14 @@ export default async function ParentPage() {
     },
   });
 
+  const schedules = new Map(
+    await Promise.all(
+      children.map(async (c) => [c.id, c.classroomId ? await classroomSchedule(c.classroomId) : []] as const),
+    ),
+  );
+
   return (
-    <div>
+    <div className="space-y-8">
       <PageHeader title={`Olá, ${parent.name}!`} subtitle="Acompanhe a jornada na Escola dos Sonhos." />
       {children.length === 0 && <p className="text-muted">Nenhum aluno vinculado a este responsável.</p>}
 
@@ -67,6 +75,13 @@ export default async function ParentPage() {
                 <Stat label="XP total" value={pet?.xp ?? 0} />
                 <Stat label="Conquistas e superações" value={child._count.events} />
               </div>
+
+              <Card>
+                <CardTitle icon={<CalendarDays size={20} className="text-brand" aria-hidden />}>
+                  Grade horária de {child.name}
+                </CardTitle>
+                <ScheduleGrid slots={schedules.get(child.id) ?? []} />
+              </Card>
 
               <Card>
                 <CardTitle icon={<Mail size={20} className="text-brand" aria-hidden />}>Recados da escola</CardTitle>

@@ -31,6 +31,9 @@ Sem `FEATHERLESS_API_KEY`, o humanizador de recados e o resumo das avaliações 
 5. Troque para **Pais** e veja o recado e a jornada do filho.
 6. Como **Aluno**, avalie a aula; volte ao Professor e gere o **resumo com IA**.
 7. Como **Gestor**, veja o engajamento de todas as turmas.
+8. Em **Gestor → Cadastros**, crie uma turma, um professor e um aluno, e atribua matérias à turma (um professor pode estar em várias turmas).
+9. Em **Gestor → Grade horária**, monte a semana da nova turma. Tente colocar a Prof.ª Marina na segunda às 07:30: o conflito com o 4º Ano A é bloqueado.
+10. Veja a grade em cada perfil: Aluno e Pais (grade da turma) e Professor (grade de todas as turmas dele).
 
 A barra de **Acessibilidade** no topo oferece alto contraste, fonte para dislexia e ajuste do tamanho da letra.
 
@@ -42,9 +45,11 @@ Next.js 15 (App Router) + TypeScript + Tailwind CSS 4 + Lucide · Prisma 6 + SQL
 |---|---|
 | `src/lib/game.ts` | Regras puras de pontos, níveis, manutenção e sequência (testadas em `game.test.ts`) |
 | `src/lib/actions.ts` | Server actions que aplicam as regras no banco |
+| `src/lib/schedule.ts` | Regras da grade horária: horários e conflitos de turma/professor (testadas em `schedule.test.ts`) |
+| `src/lib/manager-actions.ts` | Cadastros do gestor e edição da grade |
 | `src/lib/ai.ts` | Humanizador para pais e resumo para o professor |
-| `src/components/shared/` | RoleSwitcher, AccessibilityBar, PetAvatar, BuildingView, histórico e UI |
-| `src/app/{student,teacher,parent,manager}` | Telas de cada perfil |
+| `src/components/shared/` | RoleSwitcher, AccessibilityBar, PetAvatar, BuildingView, ScheduleGrid, formulários, histórico e UI |
+| `src/app/{student,teacher,parent,manager}` | Telas de cada perfil (`manager/cadastros` e `manager/grade` para o gestor) |
 | `prisma/` | Schema, migração e seed |
 
 ## Scripts
@@ -55,4 +60,4 @@ Next.js 15 (App Router) + TypeScript + Tailwind CSS 4 + Lucide · Prisma 6 + SQL
 | `npm run build` | Build de produção |
 | `npm test` | Testes das regras do jogo |
 | `npm run lint` | ESLint |
-| `npm run db:setup` / `npm run db:reset` | Cria / reseta o banco de demonstração |
+| `npm run db:setup` / `npm run db:reset` | Cria o banco / volta aos dados iniciais da demo |

@@ -7,3 +7,4 @@ Cada prompt enviado durante o desenvolvimento fica em um arquivo numerado, com o
 | 001 | [001-plano-inicial.md](001-plano-inicial.md) | Descrição do MVP e plano |
 | 002 | [002-pasta-do-projeto.md](002-pasta-do-projeto.md) | Pasta do projeto |
 | 003 | [003-dev-unico-e-registro-de-prompts.md](003-dev-unico-e-registro-de-prompts.md) | Dev único, registro de prompts e implementação |
+| 004 | [004-cadastros-e-grade-horaria.md](004-cadastros-e-grade-horaria.md) | Cadastros do gestor e grade horária |

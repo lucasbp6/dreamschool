@@ -17,6 +17,13 @@
   --success-soft: #e5f7ec;
   --sky: #0b6fa4;
   --sky-soft: #e3f3fc;
+  /* Tons suaves das matérias na grade horária. */
+  --tint-1: #efe9ff;
+  --tint-2: #e2f4fb;
+  --tint-3: #e6f6ea;
+  --tint-4: #fff1dc;
+  --tint-5: #fde8f1;
+  --tint-6: #eef1f6;
   color-scheme: light;
 }
 
@@ -36,6 +43,12 @@ html.hc {
   --success-soft: #002a10;
   --sky: #7fd8ff;
   --sky-soft: #00202e;
+  --tint-1: #000000;
+  --tint-2: #000000;
+  --tint-3: #000000;
+  --tint-4: #000000;
+  --tint-5: #000000;
+  --tint-6: #000000;
   color-scheme: dark;
 }
 
@@ -55,6 +68,12 @@ html.hc {
   --color-success-soft: var(--success-soft);
   --color-sky: var(--sky);
   --color-sky-soft: var(--sky-soft);
+  --color-tint-1: var(--tint-1);
+  --color-tint-2: var(--tint-2);
+  --color-tint-3: var(--tint-3);
+  --color-tint-4: var(--tint-4);
+  --color-tint-5: var(--tint-5);
+  --color-tint-6: var(--tint-6);
   --font-sans: var(--font-nunito), ui-rounded, system-ui, sans-serif;
   --font-readable: var(--font-atkinson), system-ui, sans-serif;
 }
