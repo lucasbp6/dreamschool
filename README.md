@@ -14,6 +14,9 @@ As regras completas estão em [`AGENTS.md`](AGENTS.md). Os prompts usados no des
 - **Node.js 20+** e npm.
 - (Opcional, recomendado) uma chave da **Featherless** para usar a IA de verdade — veja o passo 3.
 
+# importante:
+## Em se a algum botão demorar a responder, recarregue a página que ele já terá sido respondido
+
 ### Passo a passo
 
 ```bash
