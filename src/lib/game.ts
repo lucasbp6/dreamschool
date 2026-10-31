@@ -217,3 +217,59 @@ export function dayKey(date = new Date()): string {
   const d = String(date.getDate()).padStart(2, "0");
   return `${y}-${m}-${d}`;
 }
+
+// ---------- Ofensiva de avaliações ----------
+// Avaliar todos os professores que deram aula no dia rende um bônus pequeno de XP só para o pet.
+
+export const FEEDBACK_STREAK_XP = 3;
+
+export type FeedbackStreakState = { feedbackStreak: number; lastFeedbackDay: string | null };
+
+/**
+ * Fecha o dia da ofensiva. `previousSchoolDay` é o último dia anterior com aulas na grade:
+ * se o aluno completou aquele dia, a ofensiva continua; senão recomeça em 1. Fins de semana não quebram.
+ */
+export function completeFeedbackDay(
+  state: FeedbackStreakState,
+  today: string,
+  previousSchoolDay: string | null,
+): FeedbackStreakState & { xpBonus: number } {
+  if (state.lastFeedbackDay === today) return { ...state, xpBonus: 0 };
+  const continues = previousSchoolDay !== null && state.lastFeedbackDay === previousSchoolDay;
+  return {
+    feedbackStreak: continues ? state.feedbackStreak + 1 : 1,
+    lastFeedbackDay: today,
+    xpBonus: FEEDBACK_STREAK_XP,
+  };
+}
+
+/** Ofensiva exibida hoje: se o último dia completo ficou para trás de um dia letivo, ela já não vale. */
+export function currentFeedbackStreak(state: FeedbackStreakState, today: string, previousSchoolDay: string | null) {
+  if (state.lastFeedbackDay === today || state.lastFeedbackDay === previousSchoolDay) return state.feedbackStreak;
+  return 0;
+}
+
+// ---------- Boletim ----------
+
+export const ATTENDANCE_STATUS = {
+  PRESENT: { label: "Presente", short: "P" },
+  LATE: { label: "Atraso", short: "A" },
+  ABSENT: { label: "Falta", short: "F" },
+} as const;
+export type AttendanceStatus = keyof typeof ATTENDANCE_STATUS;
+
+/** Média de 0 a 10, normalizando cada nota pela nota máxima da avaliação. */
+export function gradeAverage(grades: { score: number; maxScore: number }[]): number | null {
+  if (grades.length === 0) return null;
+  return grades.reduce((s, g) => s + (g.score / g.maxScore) * 10, 0) / grades.length;
+}
+
+/** Frequência de 0 a 1 (atraso conta como presença). */
+export function attendanceRate(statuses: string[]): number | null {
+  if (statuses.length === 0) return null;
+  return statuses.filter((s) => s !== "ABSENT").length / statuses.length;
+}
+
+export function firstName(fullName: string) {
+  return fullName.trim().split(/\s+/)[0];
+}

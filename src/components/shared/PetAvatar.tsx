@@ -1,6 +1,11 @@
 import { MOOD_INFO, PET_INFO, petLevel, type Mood, type PetType } from "@/lib/game";
 
-const SIZES = { sm: "h-14 w-14 text-3xl", md: "h-24 w-24 text-5xl", lg: "h-40 w-40 text-8xl" };
+const SIZES = {
+  sm: "h-14 w-14 text-3xl",
+  md: "h-24 w-24 text-5xl",
+  lg: "h-40 w-40 text-8xl",
+  xl: "h-44 w-44 text-[6.5rem] sm:h-52 sm:w-52 sm:text-[8rem]",
+};
 const LEVEL_RING = ["ring-brand-soft", "ring-sky", "ring-brand"];
 const LEVEL_ACCESSORY = ["", "🎒", "👑"];
 

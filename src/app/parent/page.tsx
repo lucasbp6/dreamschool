@@ -1,88 +1,131 @@
-import { CalendarDays, Hammer, History, Mail } from "lucide-react";
+import Link from "next/link";
+import { CalendarDays, GraduationCap, History, Mail, Sparkles } from "lucide-react";
 import { db } from "@/lib/db";
 import { getActingUser } from "@/lib/session";
 import { classroomSchedule } from "@/lib/schedule-data";
-import { MOOD_INFO, PET_INFO, petLevel, type Mood, type PetType } from "@/lib/game";
-import { PetAvatar } from "@/components/shared/PetAvatar";
-import { BuildingView } from "@/components/shared/BuildingView";
+import { feedbackDay } from "@/lib/feedback-data";
+import { firstName } from "@/lib/game";
 import { EventList } from "@/components/shared/EventList";
+import { ReportCard } from "@/components/shared/ReportCard";
 import { ScheduleGrid } from "@/components/shared/ScheduleGrid";
-import { Badge, Card, CardTitle, PageHeader, ProgressBar, Stat } from "@/components/shared/ui";
+import { Tabs } from "@/components/shared/Tabs";
+import { WorldScene } from "@/components/shared/WorldScene";
+import { Card, CardTitle, PageHeader, Stat } from "@/components/shared/ui";
 
 const fmt = new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "long" });
 
-export default async function ParentPage() {
+export default async function ParentPage({ searchParams }: { searchParams: Promise<{ filho?: string }> }) {
   const parent = await getActingUser("PARENT");
+  const { filho } = await searchParams;
   const children = await db.user.findMany({
     where: { parentId: parent.id },
+    orderBy: { name: "asc" },
     include: {
       pet: true,
       classroom: true,
-      events: { orderBy: { createdAt: "desc" }, take: 8 },
+      events: { orderBy: { createdAt: "desc" }, take: 15 },
       parentNotes: { orderBy: { createdAt: "desc" } },
-      _count: { select: { events: { where: { type: { in: ["POSITIVE", "RECOVERY"] } } } } },
+      _count: { select: { events: { where: { type: { in: ["POSITIVE", "RECOVERY", "STREAK"] } } } } },
     },
   });
+  const child = children.find((c) => c.id === filho) ?? children[0];
 
-  const schedules = new Map(
-    await Promise.all(
-      children.map(async (c) => [c.id, c.classroomId ? await classroomSchedule(c.classroomId) : []] as const),
-    ),
-  );
+  if (!child) {
+    return (
+      <div>
+        <PageHeader title={`Olá, ${firstName(parent.name)}!`} />
+        <p className="text-muted">Nenhum aluno vinculado a este responsável.</p>
+      </div>
+    );
+  }
+
+  const [schedule, feedback] = await Promise.all([
+    child.classroomId ? classroomSchedule(child.classroomId) : [],
+    feedbackDay(child.id),
+  ]);
+  const pet = child.pet;
 
   return (
-    <div className="space-y-8">
-      <PageHeader title={`Olá, ${parent.name}!`} subtitle="Acompanhe a jornada na Escola dos Sonhos." />
-      {children.length === 0 && <p className="text-muted">Nenhum aluno vinculado a este responsável.</p>}
+    <div>
+      <PageHeader
+        title={`Olá, ${firstName(parent.name)}!`}
+        subtitle={`Acompanhe a jornada de ${child.name}${child.classroom ? ` · Turma ${child.classroom.name}` : ""}`}
+      />
 
-      {children.map((child) => {
-        const pet = child.pet;
-        const lvl = pet ? petLevel(pet.xp) : null;
-        const mood = pet ? (MOOD_INFO[pet.mood as Mood] ?? MOOD_INFO.NEUTRAL) : null;
-        return (
-          <div key={child.id} className="grid gap-5 lg:grid-cols-3">
-            <div className="space-y-5 lg:col-span-2">
-              {pet && lvl && mood && (
-                <Card className="flex flex-col items-center gap-6 sm:flex-row">
-                  <PetAvatar petType={pet.petType} xp={pet.xp} mood={pet.mood} size="lg" />
-                  <div className="w-full flex-1">
-                    <div className="text-sm font-semibold text-muted">
-                      {PET_INFO[pet.petType as PetType]?.label} de {child.name}
-                    </div>
-                    <h2 className="text-3xl font-extrabold text-ink">{pet.petName}</h2>
-                    <div className="mt-2 flex flex-wrap gap-2">
-                      <Badge>
-                        Nível {lvl.level} · {lvl.name}
-                      </Badge>
-                      <Badge tone={pet.mood === "TIRED" ? "attention" : "success"}>
-                        {mood.emoji} {mood.label}
-                      </Badge>
-                    </div>
-                    <div className="mt-4">
-                      <ProgressBar value={lvl.progress} label="XP do pet" />
-                    </div>
-                    {pet.recoveryMission && (
-                      <p className="mt-3 rounded-xl bg-attention-soft p-3 text-sm text-ink">
-                        <strong className="text-attention">Missão de Cuidado:</strong> {pet.recoveryMission}. Um
-                        incentivo em casa ajuda {child.name} a concluir! 💛
-                      </p>
-                    )}
-                  </div>
-                </Card>
-              )}
+      {children.length > 1 && (
+        <nav aria-label="Filhos" className="mb-4 flex flex-wrap gap-2">
+          {children.map((c) => (
+            <Link
+              key={c.id}
+              href={`/parent?filho=${c.id}`}
+              aria-current={c.id === child.id ? "page" : undefined}
+              className={`rounded-full border px-4 py-2 text-sm font-bold ${
+                c.id === child.id ? "border-brand bg-brand text-on-brand" : "border-line bg-surface text-ink hover:border-brand"
+              }`}
+            >
+              {c.name}
+            </Link>
+          ))}
+        </nav>
+      )}
 
-              <div className="grid grid-cols-2 gap-3">
-                <Stat label="XP total" value={pet?.xp ?? 0} />
-                <Stat label="Conquistas e superações" value={child._count.events} />
+      <Tabs
+        label={`Acompanhamento de ${child.name}`}
+        tabs={[
+          {
+            id: "pet",
+            label: "Pet e turma",
+            icon: <Sparkles size={16} aria-hidden />,
+            content: (
+              <div className="space-y-5">
+                {child.classroom && <WorldScene pet={pet ?? undefined} ownerName={child.name} classroom={child.classroom} />}
+                {pet?.recoveryMission && (
+                  <Card className="border-attention bg-attention-soft">
+                    <p className="text-ink">
+                      <strong className="text-attention">Missão de Cuidado:</strong> {pet.recoveryMission}. Um incentivo
+                      em casa ajuda {firstName(child.name)} a concluir! 💛
+                    </p>
+                  </Card>
+                )}
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                  <Stat label="XP total" value={pet?.xp ?? 0} />
+                  <Stat label="Conquistas e superações" value={child._count.events} />
+                  <Stat label="Ofensiva de avaliações" value={`🔥 ${feedback.streak}`} hint="dias avaliando todos os professores" />
+                </div>
               </div>
-
+            ),
+          },
+          {
+            id: "boletim",
+            label: "Boletim",
+            icon: <GraduationCap size={16} aria-hidden />,
+            content: child.classroomId ? (
+              <ReportCard studentId={child.id} classroomId={child.classroomId} />
+            ) : (
+              <p className="text-muted">Sem turma.</p>
+            ),
+          },
+          {
+            id: "grade",
+            label: "Grade",
+            icon: <CalendarDays size={16} aria-hidden />,
+            content: (
               <Card>
                 <CardTitle icon={<CalendarDays size={20} className="text-brand" aria-hidden />}>
-                  Grade horária de {child.name}
+                  Grade horária de {firstName(child.name)}
                 </CardTitle>
-                <ScheduleGrid slots={schedules.get(child.id) ?? []} />
+                <ScheduleGrid slots={schedule} />
               </Card>
-
+            ),
+          },
+          {
+            id: "recados",
+            label: "Recados",
+            icon: <Mail size={16} aria-hidden />,
+            badge: child.parentNotes.length ? (
+              <span className="rounded-full bg-surface px-1.5 text-xs text-ink">{child.parentNotes.length}</span>
+            ) : undefined,
+            content: (
               <Card>
                 <CardTitle icon={<Mail size={20} className="text-brand" aria-hidden />}>Recados da escola</CardTitle>
                 {child.parentNotes.length === 0 ? (
@@ -98,25 +141,21 @@ export default async function ParentPage() {
                   </ul>
                 )}
               </Card>
-            </div>
-
-            <div className="space-y-5">
-              {child.classroom && (
-                <Card>
-                  <CardTitle icon={<Hammer size={20} className="text-sky" aria-hidden />}>
-                    Construção da {child.classroom.name}
-                  </CardTitle>
-                  <BuildingView {...child.classroom} compact />
-                </Card>
-              )}
+            ),
+          },
+          {
+            id: "historico",
+            label: "Histórico",
+            icon: <History size={16} aria-hidden />,
+            content: (
               <Card>
                 <CardTitle icon={<History size={20} className="text-brand" aria-hidden />}>Histórico</CardTitle>
                 <EventList events={child.events} />
               </Card>
-            </div>
-          </div>
-        );
-      })}
+            ),
+          },
+        ]}
+      />
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { now } from "@/lib/clock";
 import { WEEKDAYS, toMinutes } from "@/lib/schedule";
 import type { GridSlot } from "@/lib/schedule-data";
 
@@ -28,7 +29,7 @@ export function ScheduleGrid({
   const periods = [...new Map(slots.map((s) => [`${s.startTime}-${s.endTime}`, s])).values()]
     .map((s) => ({ key: `${s.startTime}-${s.endTime}`, startTime: s.startTime, endTime: s.endTime }))
     .sort((a, b) => toMinutes(a.startTime) - toMinutes(b.startTime) || toMinutes(a.endTime) - toMinutes(b.endTime));
-  const today = new Date().getDay(); // 0 = domingo, 1 = segunda...
+  const today = now().getDay(); // 0 = domingo, 1 = segunda...
 
   return (
     <div className="overflow-x-auto">

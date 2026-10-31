@@ -8,3 +8,4 @@ Cada prompt enviado durante o desenvolvimento fica em um arquivo numerado, com o
 | 002 | [002-pasta-do-projeto.md](002-pasta-do-projeto.md) | Pasta do projeto |
 | 003 | [003-dev-unico-e-registro-de-prompts.md](003-dev-unico-e-registro-de-prompts.md) | Dev único, registro de prompts e implementação |
 | 004 | [004-cadastros-e-grade-horaria.md](004-cadastros-e-grade-horaria.md) | Cadastros do gestor e grade horária |
+| 005 | [005-abas-chamada-notas-ofensiva.md](005-abas-chamada-notas-ofensiva.md) | Abas, nomes completos, avaliação por professor, chamada, notas e ofensiva |

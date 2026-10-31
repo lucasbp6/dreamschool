@@ -36,21 +36,25 @@ model Classroom {
 }
 
 model User {
-  id              String           @id @default(cuid())
-  name            String
-  role            String // STUDENT | TEACHER | PARENT | MANAGER
-  schoolId        String
-  school          School           @relation(fields: [schoolId], references: [id])
-  classroomId     String?
-  classroom       Classroom?       @relation("ClassStudents", fields: [classroomId], references: [id])
-  teaching        ClassSubject[]
-  parentId        String?
-  parent          User?            @relation("ParentChildren", fields: [parentId], references: [id])
-  children        User[]           @relation("ParentChildren")
-  pet             Pet?
-  events          Event[]
-  parentNotes     ParentNote[]
-  lessonFeedbacks LessonFeedback[]
+  id                String            @id @default(cuid())
+  name              String
+  role              String // STUDENT | TEACHER | PARENT | MANAGER
+  schoolId          String
+  school            School            @relation(fields: [schoolId], references: [id])
+  classroomId       String?
+  classroom         Classroom?        @relation("ClassStudents", fields: [classroomId], references: [id])
+  teaching          ClassSubject[]
+  parentId          String?
+  parent            User?             @relation("ParentChildren", fields: [parentId], references: [id])
+  children          User[]            @relation("ParentChildren")
+  pet               Pet?
+  events            Event[]
+  parentNotes       ParentNote[]
+  lessonFeedbacks   LessonFeedback[]  @relation("StudentFeedbacks")
+  feedbacksReceived LessonFeedback[]  @relation("TeacherFeedbacks")
+  feedbackSummaries FeedbackSummary[]
+  attendances       Attendance[]
+  grades            Grade[]
 }
 
 model Pet {
@@ -60,6 +64,8 @@ model Pet {
   xp              Int     @default(0)
   mood            String  @default("NEUTRAL") // HAPPY | NEUTRAL | TIRED
   recoveryMission String?
+  feedbackStreak  Int     @default(0) // ofensiva: dias seguidos avaliando todos os professores do dia
+  lastFeedbackDay String? // YYYY-MM-DD do último dia completo da ofensiva
   studentId       String  @unique
   student         User    @relation(fields: [studentId], references: [id], onDelete: Cascade)
 }
@@ -87,15 +93,21 @@ model ParentNote {
   student       User     @relation(fields: [studentId], references: [id], onDelete: Cascade)
 }
 
+// Avaliação de um professor por um aluno (uma por professor por dia).
 model LessonFeedback {
   id          String    @id @default(cuid())
   stars       Int // 1 a 3
   comment     String?
+  day         String // YYYY-MM-DD
   createdAt   DateTime  @default(now())
   studentId   String
-  student     User      @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  student     User      @relation("StudentFeedbacks", fields: [studentId], references: [id], onDelete: Cascade)
+  teacherId   String
+  teacher     User      @relation("TeacherFeedbacks", fields: [teacherId], references: [id], onDelete: Cascade)
   classroomId String
   classroom   Classroom @relation(fields: [classroomId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, teacherId, day])
 }
 
 model FeedbackSummary {
@@ -103,6 +115,8 @@ model FeedbackSummary {
   text          String
   feedbackCount Int
   createdAt     DateTime  @default(now())
+  teacherId     String
+  teacher       User      @relation(fields: [teacherId], references: [id], onDelete: Cascade)
   classroomId   String
   classroom     Classroom @relation(fields: [classroomId], references: [id], onDelete: Cascade)
 }
@@ -128,6 +142,8 @@ model ClassSubject {
   teacherId   String
   teacher     User           @relation(fields: [teacherId], references: [id])
   slots       ScheduleSlot[]
+  attendances Attendance[]
+  assessments Assessment[]
 
   @@unique([classroomId, subjectId])
 }
@@ -140,4 +156,39 @@ model ScheduleSlot {
   endTime        String // "HH:MM"
   classSubjectId String
   classSubject   ClassSubject @relation(fields: [classSubjectId], references: [id], onDelete: Cascade)
+}
+
+// Chamada: presença do aluno numa matéria em um dia.
+model Attendance {
+  id             String       @id @default(cuid())
+  date           String // YYYY-MM-DD
+  status         String // PRESENT | ABSENT | LATE
+  classSubjectId String
+  classSubject   ClassSubject @relation(fields: [classSubjectId], references: [id], onDelete: Cascade)
+  studentId      String
+  student        User         @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([classSubjectId, studentId, date])
+}
+
+// Avaliação lançada pelo professor (prova, trabalho...) com nota máxima.
+model Assessment {
+  id             String       @id @default(cuid())
+  title          String
+  date           String // YYYY-MM-DD
+  maxScore       Float        @default(10)
+  classSubjectId String
+  classSubject   ClassSubject @relation(fields: [classSubjectId], references: [id], onDelete: Cascade)
+  grades         Grade[]
+}
+
+model Grade {
+  id           String     @id @default(cuid())
+  score        Float
+  assessmentId String
+  assessment   Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  studentId    String
+  student      User       @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([assessmentId, studentId])
 }

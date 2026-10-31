@@ -75,7 +75,7 @@ export async function createStudent(_: FormState, fd: FormData): Promise<FormSta
   const petType = text(fd, "petType");
   const petName = text(fd, "petName");
   const parentName = text(fd, "parentName");
-  if (!name) return fail("Informe o nome do aluno.");
+  if (name.split(/\s+/).length < 2) return fail("Informe o nome completo do aluno (nome e sobrenome).");
   if (!classroomId) return fail("Escolha a turma.");
   if (!(PET_TYPES as readonly string[]).includes(petType)) return fail("Escolha o tipo de pet.");
   if (!petName) return fail("Dê um nome ao pet.");

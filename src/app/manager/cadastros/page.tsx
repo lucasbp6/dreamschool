@@ -76,8 +76,8 @@ export default async function CadastrosPage() {
             <p className="text-sm text-muted">Cadastre uma turma primeiro.</p>
           ) : (
             <ActionForm action={createStudent} submitLabel="Cadastrar aluno">
-              <Field label="Nome">
-                <TextInput name="name" required />
+              <Field label="Nome completo">
+                <TextInput name="name" placeholder="Ex.: Beatriz Souza Lima" required />
               </Field>
               <Field label="Turma">
                 <Select name="classroomId" required>
@@ -103,7 +103,7 @@ export default async function CadastrosPage() {
                 </Field>
               </div>
               <Field label="Responsável (opcional)">
-                <TextInput name="parentName" list="parents" placeholder="Existente ou novo" />
+                <TextInput name="parentName" list="parents" placeholder="Nome completo (existente ou novo)" />
               </Field>
               <datalist id="parents">
                 {parents.map((p) => (

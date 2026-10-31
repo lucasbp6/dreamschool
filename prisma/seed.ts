@@ -1,16 +1,21 @@
 // Dados de demonstração: a demo já começa com turmas, pets em níveis diferentes e histórico.
 import { PrismaClient } from "@prisma/client";
-import { validateSlot, type ExistingSlot } from "../src/lib/schedule";
+import { now } from "../src/lib/clock";
+import { dayKey } from "../src/lib/game";
+import { previousSchoolDay, validateSlot, type ExistingSlot } from "../src/lib/schedule";
 
 const prisma = new PrismaClient();
 
 function daysAgo(n: number) {
-  const d = new Date();
+  const d = now();
   d.setDate(d.getDate() - n);
   return d;
 }
 
 async function main() {
+  await prisma.grade.deleteMany();
+  await prisma.assessment.deleteMany();
+  await prisma.attendance.deleteMany();
   await prisma.scheduleSlot.deleteMany();
   await prisma.classSubject.deleteMany();
   await prisma.subject.deleteMany();
@@ -27,12 +32,12 @@ async function main() {
   const user = (name: string, role: string, extra: Record<string, string> = {}) =>
     prisma.user.create({ data: { name, role, schoolId: school.id, ...extra } });
 
-  await user("Ana Gestora", "MANAGER");
+  await user("Ana Paula Moreira", "MANAGER");
   const profMarina = await user("Prof.ª Marina", "TEACHER");
   const profCarlos = await user("Prof. Carlos", "TEACHER");
   const profJulia = await user("Prof.ª Júlia", "TEACHER");
-  const maeJoao = await user("Cláudia (mãe do João)", "PARENT");
-  const paiLia = await user("Roberto (pai da Lia)", "PARENT");
+  const maeJoao = await user("Cláudia Almeida", "PARENT");
+  const paiLia = await user("Roberto Fernandes", "PARENT");
 
   const castle = await prisma.classroom.create({
     data: {
@@ -55,12 +60,12 @@ async function main() {
   });
 
   const students = [
-    { name: "João", room: castle, parent: maeJoao, pet: ["DRAGON", "Faísca", 60, "TIRED", "Entregar a próxima tarefa"] },
-    { name: "Lia", room: castle, parent: paiLia, pet: ["OWL", "Sábia", 160, "HAPPY", null] },
-    { name: "Pedro", room: castle, parent: null, pet: ["DOG", "Bolinha", 30, "NEUTRAL", null] },
-    { name: "Sofia", room: space, parent: null, pet: ["CAT", "Luna", 90, "HAPPY", null] },
-    { name: "Miguel", room: space, parent: null, pet: ["FOX", "Cometa", 20, "NEUTRAL", null] },
-    { name: "Helena", room: space, parent: null, pet: ["BUNNY", "Pipoca", 45, "HAPPY", null] },
+    { name: "João Pedro Almeida", room: castle, parent: maeJoao, pet: ["DRAGON", "Faísca", 60, "TIRED", "Entregar a próxima tarefa"] },
+    { name: "Lia Fernandes Costa", room: castle, parent: paiLia, pet: ["OWL", "Sábia", 160, "HAPPY", null] },
+    { name: "Pedro Henrique Souza", room: castle, parent: null, pet: ["DOG", "Bolinha", 30, "NEUTRAL", null] },
+    { name: "Sofia Ribeiro Lima", room: space, parent: null, pet: ["CAT", "Luna", 90, "HAPPY", null] },
+    { name: "Miguel Santos Oliveira", room: space, parent: null, pet: ["FOX", "Cometa", 20, "NEUTRAL", null] },
+    { name: "Helena Martins Rocha", room: space, parent: null, pet: ["BUNNY", "Pipoca", 45, "HAPPY", null] },
   ] as const;
 
   for (const s of students) {
@@ -95,7 +100,7 @@ async function main() {
       });
     }
 
-    if (s.name === "João") {
+    if (s.name.startsWith("João")) {
       await prisma.event.create({
         data: {
           type: "ATTENTION",
@@ -143,15 +148,9 @@ async function main() {
     },
   ]);
 
-  const castleStudents = await prisma.user.findMany({ where: { classroomId: castle.id } });
-  const comments = ["Adorei o jogo de frações!", "A explicação foi rápida demais.", null];
-  for (const [i, st] of castleStudents.entries()) {
-    await prisma.lessonFeedback.create({
-      data: { stars: [3, 2, 3][i] ?? 3, comment: comments[i], studentId: st.id, classroomId: castle.id },
-    });
-  }
+  await seedAcademics([castle.id, space.id], ["Lia Fernandes Costa", "Sofia Ribeiro Lima"]);
 
-  console.log("Seed concluído: escola, 2 turmas com grade horária, 3 professores, 6 alunos, pais e gestor.");
+  console.log("Seed concluído: 2 turmas com grade, chamadas, notas e avaliações; 3 professores, 6 alunos, pais e gestor.");
 }
 
 const PERIODS = [
@@ -193,6 +192,80 @@ async function seedSchedule(schoolId: string, plans: ScheduleSeed[]) {
         if (conflict) throw new Error(`Seed com conflito: ${conflict}`);
         placed.push({ ...slot, classroomId: room.id, classroomName: room.name, teacherId: teacher.id, teacherName: teacher.name, subjectName: name });
         await prisma.scheduleSlot.create({ data: { ...slot, classSubjectId: classSubjects.get(name)! } });
+      }
+    }
+  }
+}
+
+const COMMENTS = ["Adorei a atividade em grupo!", "A explicação foi rápida demais.", "Gostei dos exemplos.", null, null];
+
+/**
+ * Chamadas e avaliações das últimas duas semanas, notas de duas avaliações por matéria e
+ * a ofensiva de alguns alunos (que avaliaram todos os professores em todos os dias letivos).
+ */
+async function seedAcademics(classroomIds: string[], streakers: string[]) {
+  const today = dayKey(now());
+  for (const classroomId of classroomIds) {
+    const classSubjects = await prisma.classSubject.findMany({ where: { classroomId }, include: { slots: true } });
+    const students = await prisma.user.findMany({ where: { classroomId }, orderBy: { name: "asc" }, include: { pet: true } });
+
+    for (let back = 14; back >= 1; back--) {
+      const date = daysAgo(back);
+      const day = dayKey(date);
+      const todays = classSubjects.filter((cs) => cs.slots.some((s) => s.weekday === date.getDay()));
+      for (const [ci, cs] of todays.entries()) {
+        for (const [si, st] of students.entries()) {
+          const roll = (si * 7 + back * 3 + ci * 5) % 13;
+          await prisma.attendance.create({
+            data: { date: day, classSubjectId: cs.id, studentId: st.id, status: roll === 0 ? "ABSENT" : roll === 1 ? "LATE" : "PRESENT" },
+          });
+        }
+      }
+      // Avaliações dos professores do dia.
+      const teachers = [...new Set(todays.map((cs) => cs.teacherId))];
+      for (const [si, st] of students.entries()) {
+        const always = streakers.includes(st.name);
+        for (const [ti, teacherId] of teachers.entries()) {
+          if (!always && (si + back + ti) % 3 !== 0) continue;
+          await prisma.lessonFeedback.create({
+            data: {
+              stars: 2 + ((si + ti + back) % 2),
+              comment: COMMENTS[(si + ti + back) % COMMENTS.length],
+              day,
+              studentId: st.id,
+              teacherId,
+              classroomId,
+            },
+          });
+        }
+      }
+    }
+
+    for (const [ci, cs] of classSubjects.entries()) {
+      const assessments = [
+        { title: "Prova 1", date: dayKey(daysAgo(12)) },
+        { title: "Trabalho em grupo", date: dayKey(daysAgo(5)) },
+      ];
+      for (const [ai, a] of assessments.entries()) {
+        const created = await prisma.assessment.create({ data: { ...a, maxScore: 10, classSubjectId: cs.id } });
+        for (const [si, st] of students.entries()) {
+          await prisma.grade.create({
+            data: { assessmentId: created.id, studentId: st.id, score: 5 + ((si * 3 + ci * 2 + ai * 5) % 10) * 0.5 },
+          });
+        }
+      }
+    }
+
+    // Quem avaliou todos os dias tem a ofensiva acesa até o último dia letivo.
+    const lessonDays = new Set(classSubjects.flatMap((cs) => cs.slots.map((s) => s.weekday)));
+    const lastSchoolDay = previousSchoolDay(today, lessonDays);
+    const schoolDaysInWindow = Array.from({ length: 14 }, (_, i) => daysAgo(i + 1)).filter((d) => lessonDays.has(d.getDay())).length;
+    for (const st of students) {
+      if (st.pet && streakers.includes(st.name)) {
+        await prisma.pet.update({
+          where: { id: st.pet.id },
+          data: { feedbackStreak: schoolDaysInWindow, lastFeedbackDay: lastSchoolDay },
+        });
       }
     }
   }

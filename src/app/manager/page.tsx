@@ -27,7 +27,9 @@ export default async function ManagerPage() {
   const students = classrooms.reduce((s, c) => s + c.students.length, 0);
 
   const rows = classrooms.map((c) => {
-    const weekPositive = c.events.filter((e) => e.type !== "ATTENTION" && e.createdAt >= since).length;
+    const weekPositive = c.events.filter(
+      (e) => (e.type === "POSITIVE" || e.type === "RECOVERY") && e.createdAt >= since,
+    ).length;
     const avg = c.feedbacks.length ? c.feedbacks.reduce((s, f) => s + f.stars, 0) / c.feedbacks.length : null;
     const teachers = [...new Set(c.classSubjects.map((cs) => cs.teacher.name))].sort();
     return { c, weekPositive, perStudent: c.students.length ? weekPositive / c.students.length : 0, avg, teachers };
@@ -98,7 +100,7 @@ export default async function ManagerPage() {
               </div>
               <div className="rounded-xl bg-surface-2 p-2">
                 <dt className="text-xs text-muted">Avaliação das aulas</dt>
-                <dd className="font-extrabold tabular-nums">{avg !== null ? `${avg.toFixed(1)} ★` : "—"}</dd>
+                <dd className="font-extrabold tabular-nums">{avg !== null ? `${avg.toLocaleString("pt-BR", { maximumFractionDigits: 1 })} ★` : "—"}</dd>
               </div>
             </dl>
           </Card>

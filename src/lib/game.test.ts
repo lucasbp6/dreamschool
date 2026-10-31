@@ -1,5 +1,18 @@
 import { describe, expect, it } from "vitest";
-import { applyAttention, applyPositive, buildingLevel, petLevel, type ClassroomState, type PetState } from "./game";
+import {
+  FEEDBACK_STREAK_XP,
+  applyAttention,
+  applyPositive,
+  attendanceRate,
+  buildingLevel,
+  completeFeedbackDay,
+  currentFeedbackStreak,
+  firstName,
+  gradeAverage,
+  petLevel,
+  type ClassroomState,
+  type PetState,
+} from "./game";
 
 const pet: PetState = { xp: 40, mood: "NEUTRAL", recoveryMission: null };
 const room: ClassroomState = { bricks: 95, maintenanceNeeded: 0, streak: 2, lastStreakDay: "2026-10-30" };
@@ -71,5 +84,49 @@ describe("ponto de atenção", () => {
     const second = applyAttention(first.pet, first.classroom, "INTERRUPTION");
     expect(second.mission).toBe("Entregar a próxima tarefa");
     expect(second.classroom.maintenanceNeeded).toBe(10);
+  });
+});
+
+describe("ofensiva de avaliações", () => {
+  it("começa em 1 e dá bônus pequeno", () => {
+    const r = completeFeedbackDay({ feedbackStreak: 0, lastFeedbackDay: null }, "2026-10-26", "2026-10-23");
+    expect(r).toEqual({ feedbackStreak: 1, lastFeedbackDay: "2026-10-26", xpBonus: FEEDBACK_STREAK_XP });
+  });
+
+  it("continua se o dia letivo anterior foi completo (sexta → segunda)", () => {
+    const r = completeFeedbackDay({ feedbackStreak: 4, lastFeedbackDay: "2026-10-23" }, "2026-10-26", "2026-10-23");
+    expect(r.feedbackStreak).toBe(5);
+  });
+
+  it("recomeça se pulou um dia letivo, sem tirar XP", () => {
+    const r = completeFeedbackDay({ feedbackStreak: 4, lastFeedbackDay: "2026-10-21" }, "2026-10-26", "2026-10-23");
+    expect(r.feedbackStreak).toBe(1);
+    expect(r.xpBonus).toBeGreaterThan(0);
+  });
+
+  it("não dá bônus duas vezes no mesmo dia", () => {
+    const r = completeFeedbackDay({ feedbackStreak: 2, lastFeedbackDay: "2026-10-26" }, "2026-10-26", "2026-10-23");
+    expect(r).toEqual({ feedbackStreak: 2, lastFeedbackDay: "2026-10-26", xpBonus: 0 });
+  });
+
+  it("ofensiva exibida zera só depois de perder um dia letivo", () => {
+    const s = { feedbackStreak: 3, lastFeedbackDay: "2026-10-23" };
+    expect(currentFeedbackStreak(s, "2026-10-26", "2026-10-23")).toBe(3);
+    expect(currentFeedbackStreak(s, "2026-10-27", "2026-10-26")).toBe(0);
+  });
+});
+
+describe("boletim", () => {
+  it("normaliza notas para 0–10", () => {
+    expect(gradeAverage([{ score: 8, maxScore: 10 }, { score: 15, maxScore: 20 }])).toBeCloseTo(7.75);
+    expect(gradeAverage([])).toBeNull();
+  });
+
+  it("atraso conta como presença", () => {
+    expect(attendanceRate(["PRESENT", "LATE", "ABSENT", "PRESENT"])).toBe(0.75);
+  });
+
+  it("primeiro nome", () => {
+    expect(firstName("João Pedro Almeida")).toBe("João");
   });
 });

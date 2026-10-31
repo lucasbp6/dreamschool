@@ -24,6 +24,11 @@
   --tint-4: #fff1dc;
   --tint-5: #fde8f1;
   --tint-6: #eef1f6;
+  /* Cenário do pet e da construção. */
+  --sky-top: #9bd7ff;
+  --sky-bottom: #e8f6ff;
+  --grass: #7ccf7a;
+  --grass-dark: #4fa65a;
   color-scheme: light;
 }
 
@@ -49,6 +54,10 @@ html.hc {
   --tint-4: #000000;
   --tint-5: #000000;
   --tint-6: #000000;
+  --sky-top: #000000;
+  --sky-bottom: #000000;
+  --grass: #0b3d12;
+  --grass-dark: #0b3d12;
   color-scheme: dark;
 }
 
@@ -114,7 +123,29 @@ body {
 }
 .pet-happy { animation: pet-bounce 1.8s ease-in-out infinite; }
 .pet-tired { animation: pet-sway 4s ease-in-out infinite; filter: saturate(0.6); }
+.pet-idle { animation: pet-bounce 3.5s ease-in-out infinite; }
+
+@keyframes cloud-drift {
+  from { transform: translateX(-10%); }
+  to { transform: translateX(110%); }
+}
+@keyframes twinkle {
+  0%, 100% { opacity: 0.2; transform: scale(0.8); }
+  50% { opacity: 1; transform: scale(1.1); }
+}
+.cloud { animation: cloud-drift 40s linear infinite; }
+.cloud-slow { animation: cloud-drift 65s linear infinite; }
+.twinkle { animation: twinkle 2.4s ease-in-out infinite; }
+
+.scene-sky { background: linear-gradient(180deg, var(--sky-top), var(--sky-bottom)); }
+.scene-grass {
+  background: linear-gradient(180deg, var(--grass), var(--grass-dark));
+  border-top-left-radius: 50% 2.5rem;
+  border-top-right-radius: 50% 2.5rem;
+}
+html.hc .scene-grass { border-top: 2px solid var(--line); }
+html.hc .cloud, html.hc .cloud-slow { display: none; }
 
 @media (prefers-reduced-motion: reduce) {
-  .pet-happy, .pet-tired { animation: none; }
+  .pet-happy, .pet-tired, .pet-idle, .cloud, .cloud-slow, .twinkle { animation: none; }
 }

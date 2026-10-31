@@ -38,6 +38,16 @@ Plataforma web gamificada para o ensino básico conectando Alunos, Professores, 
 - **Grade horária (`ScheduleSlot`):** o gestor monta a semana de cada turma (dia, início e fim em `HH:MM`). São bloqueadas aulas sobrepostas na mesma turma e professor em duas turmas no mesmo horário (regras em `src/lib/schedule.ts`).
 - **Todos veem sua grade:** aluno e pais veem a grade da turma; o professor vê a grade consolidada de todas as suas turmas; o gestor edita a de cada turma.
 
+### F. Vida Escolar: Chamada, Notas, Boletim e Ofensiva de Avaliações
+- **Chamada:** o professor lança presença por matéria e dia (`Presente`, `Atraso`, `Falta`). Atraso conta como presença na frequência.
+- **Notas:** o professor cria avaliações por matéria (nome, data, nota máxima) e lança as notas; a média é normalizada para 0–10.
+- **Boletim:** aluno e pais veem média e frequência de cada matéria. Média abaixo de 6 e frequência abaixo de 75% aparecem em âmbar (nunca vermelho).
+- **Avaliação de professores:** o aluno escolhe o professor específico e dá 1 a 3 estrelas + comentário opcional — uma avaliação por professor por dia. O resumo com IA é por professor e turma.
+- **Ofensiva de avaliações:** avaliar **todos os professores que deram aula no dia** (pela grade) fecha o dia: `+3 XP` só para o pet (não gera tijolinhos). Dias sem aula (fim de semana) não quebram a ofensiva; pular um dia letivo a recomeça em 1, sem perder XP.
+- **Nomes completos:** alunos são cadastrados com nome e sobrenome; as saudações usam o primeiro nome.
+- **Navegação por abas** nas telas de Aluno, Professor e Pais; pet e construção ficam em destaque num cenário lúdico.
+- `DEMO_TODAY=YYYY-MM-DD` no `.env` fixa o "hoje" da aplicação (útil para apresentar a ofensiva num fim de semana).
+
 ## 2. Stack Tecnológica (MVP Hackathon)
 - **Framework:** Next.js 14+ (App Router) com TypeScript + Tailwind CSS + Lucide Icons.
 - **Banco de Dados:** SQLite local com Prisma ORM (`prisma/schema.prisma`).

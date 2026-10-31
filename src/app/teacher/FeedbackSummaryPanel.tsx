@@ -7,18 +7,19 @@ import { Stat } from "@/components/shared/ui";
 
 type Props = {
   classroomId: string;
+  teacherId: string;
   count: number;
   avgStars: number | null;
   latest: { text: string; createdAt: string } | null;
 };
 
-export function FeedbackSummaryPanel({ classroomId, count, avgStars, latest }: Props) {
+export function FeedbackSummaryPanel({ classroomId, teacherId, count, avgStars, latest }: Props) {
   const [pending, startTransition] = useTransition();
   const [message, setMessage] = useState<string | null>(null);
 
   const generate = () =>
     startTransition(async () => {
-      const res = await generateFeedbackSummary(classroomId);
+      const res = await generateFeedbackSummary(classroomId, teacherId);
       setMessage(res.ok ? (res.usedAi ? null : "IA indisponível: mostrando um resumo simples.") : res.message);
     });
 
@@ -28,7 +29,7 @@ export function FeedbackSummaryPanel({ classroomId, count, avgStars, latest }: P
         <Stat label="Avaliações" value={count} />
         <Stat
           label="Média"
-          value={avgStars !== null ? `${avgStars.toFixed(1)} ★` : "—"}
+          value={avgStars !== null ? `${avgStars.toLocaleString("pt-BR", { maximumFractionDigits: 1 })} ★` : "—"}
           hint="de 3 estrelas"
         />
       </div>

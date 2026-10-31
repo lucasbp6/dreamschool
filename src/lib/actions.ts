@@ -7,6 +7,8 @@ import { redirect } from "next/navigation";
 import { db } from "./db";
 import { humanizeNote, summarizeFeedback } from "./ai";
 import { SESSION_COOKIE } from "./session";
+import { now } from "./clock";
+import { feedbackDay } from "./feedback-data";
 import {
   ATTENTION_CATEGORIES,
   BUILDING_TYPES,
@@ -16,6 +18,7 @@ import {
   ROLE_PATHS,
   applyAttention,
   applyPositive,
+  completeFeedbackDay,
   dayKey,
   type AttentionCategory,
   type Mood,
@@ -47,7 +50,7 @@ export async function givePositive(studentId: string, category: PositiveCategory
   const r = applyPositive(
     { xp: pet.xp, mood: pet.mood as Mood, recoveryMission: pet.recoveryMission },
     classroom,
-    dayKey(),
+    dayKey(now()),
   );
 
   await db.$transaction([
@@ -119,28 +122,71 @@ export async function saveParentNote(studentId: string, rawText: string, humaniz
   revalidateAll();
 }
 
-export async function submitLessonFeedback(studentId: string, stars: number, comment: string) {
-  const student = await db.user.findUniqueOrThrow({ where: { id: studentId } });
-  if (!student.classroomId) throw new Error("Aluno sem turma");
+export type FeedbackResult = { ok: boolean; message: string };
+
+/** Avaliação de um professor específico. Completar todos os professores do dia avança a ofensiva (+XP só no pet). */
+export async function submitLessonFeedback(
+  studentId: string,
+  teacherId: string,
+  stars: number,
+  comment: string,
+): Promise<FeedbackResult> {
+  const before = await feedbackDay(studentId);
+  const { student, today } = before;
+  const teacher = before.teachers.find((t) => t.id === teacherId);
+  if (!student.classroomId || !teacher) return { ok: false, message: "Escolha um professor da sua turma." };
+  if (teacher.ratedToday) return { ok: false, message: `Você já avaliou ${teacher.name} hoje. Volte amanhã! 💜` };
+
   await db.lessonFeedback.create({
     data: {
       stars: Math.min(3, Math.max(1, Math.round(stars))),
       comment: comment.trim() || null,
+      day: today,
       studentId,
+      teacherId,
       classroomId: student.classroomId,
     },
   });
+
+  let message = `Obrigado! Sua avaliação para ${teacher.name} foi enviada. 💜`;
+  const pet = student.pet;
+  const nowComplete =
+    teacher.hasLessonToday && before.required > 0 && before.ratedRequired + 1 === before.required;
+  if (pet && nowComplete) {
+    const r = completeFeedbackDay(pet, today, before.previousSchoolDay);
+    if (r.xpBonus > 0) {
+      await db.$transaction([
+        db.pet.update({
+          where: { id: pet.id },
+          data: { feedbackStreak: r.feedbackStreak, lastFeedbackDay: r.lastFeedbackDay, xp: { increment: r.xpBonus } },
+        }),
+        db.event.create({
+          data: {
+            type: "STREAK",
+            category: "Ofensiva de avaliações",
+            note: `${r.feedbackStreak} dia(s) seguidos avaliando todos os professores`,
+            xpDelta: r.xpBonus,
+            studentId,
+            classroomId: student.classroomId,
+          },
+        }),
+      ]);
+      message = `🔥 Ofensiva de ${r.feedbackStreak} dia(s)! Você avaliou todos os professores de hoje: +${r.xpBonus} XP para ${pet.petName}.`;
+    }
+  }
   revalidateAll();
+  return { ok: true, message };
 }
 
-export async function generateFeedbackSummary(classroomId: string) {
-  const classroom = await db.classroom.findUniqueOrThrow({
-    where: { id: classroomId },
-    include: { feedbacks: { orderBy: { createdAt: "desc" }, take: 50 } },
-  });
-  if (classroom.feedbacks.length === 0) return { ok: false as const, message: "Ainda não há avaliações." };
-  const { text, usedAi } = await summarizeFeedback(classroom.name, classroom.feedbacks);
-  await db.feedbackSummary.create({ data: { classroomId, text, feedbackCount: classroom.feedbacks.length } });
+/** Resumo com IA das avaliações que um professor recebeu numa turma. */
+export async function generateFeedbackSummary(classroomId: string, teacherId: string) {
+  const [classroom, feedbacks] = await Promise.all([
+    db.classroom.findUniqueOrThrow({ where: { id: classroomId } }),
+    db.lessonFeedback.findMany({ where: { classroomId, teacherId }, orderBy: { createdAt: "desc" }, take: 50 }),
+  ]);
+  if (feedbacks.length === 0) return { ok: false as const, message: "Ainda não há avaliações para você nesta turma." };
+  const { text, usedAi } = await summarizeFeedback(classroom.name, feedbacks);
+  await db.feedbackSummary.create({ data: { classroomId, teacherId, text, feedbackCount: feedbacks.length } });
   revalidateAll();
   return { ok: true as const, usedAi };
 }
